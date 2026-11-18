@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Recently Released - WaterVapor{% endblock %}
+{% block content %}
+<h1>Recently Released</h1>
+<p>Game Steam yang dirilis dalam {{ days }} hari terakhir.</p>
+{% if games %}
+<section class="game-grid">
+{% for game in games %}
+<article class="game-card">
+    {% if game.cover_image %}<img src="{{ game.cover_image }}" alt="{{ game.name }}">{% endif %}
+    <h2>{{ game.name }}</h2>
+    <p>{{ game.release_date or "Tanggal tidak tersedia" }}</p>
+    {% if game.steam_app_id %}
+    <a href="https://store.steampowered.com/app/{{ game.steam_app_id }}/" target="_blank" rel="noopener">Steam Store</a>
+    {% endif %}
+</article>
+{% endfor %}
+</section>
+{% else %}
+<p>Belum ada data game terbaru.</p>
+{% endif %}
+{% endblock %}
