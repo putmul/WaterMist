@@ -1,11 +1,11 @@
 # PRD Modul 06 — Dashboard, Halaman & UI
 
-**Proyek:** WaterVapor | **Versi:** 1.0 | **Tanggal:** 18 November 2026 | **Status:** Draft (belum dikembangkan)
+**Proyek:** WaterMist | **Versi:** 1.0 | **Tanggal:** 18 November 2026 | **Status:** Draft (belum dikembangkan)
 **Dependensi:** Modul 01–05 (halaman bisa dikerjakan bertahap sesuai modul yang selesai)
 
 ## 1. Tujuan
 
-Menyajikan semua fitur WaterVapor lewat antarmuka web yang cepat dan konsisten: Dashboard, Deals, Recently Released, Recommendations, dan Game Detail.
+Menyajikan semua fitur WaterMist lewat antarmuka web yang cepat dan konsisten: Dashboard, Deals, Recently Released, Recommendations, dan Game Detail.
 
 **Teknologi:** Flask + Jinja2, HTML/CSS/JS, Bootstrap 5, Chart.js (untuk grafik riwayat harga, jika diperlukan).
 

@@ -1,11 +1,11 @@
 # PRD Modul 03 — Recently Released
 
-**Proyek:** WaterVapor | **Versi:** 1.0 | **Tanggal:** 18 November 2026 | **Status:** Bot scraping sudah tersedia, integrasi belum
+**Proyek:** WaterMist | **Versi:** 1.0 | **Tanggal:** 18 November 2026 | **Status:** Bot scraping sudah tersedia, integrasi belum
 **Dependensi:** Modul 01 | **Dikonsumsi oleh:** Modul 05 (metadata), Modul 06
 
 ## 1. Tujuan
 
-Menampilkan game PC yang baru dirilis di Steam. Bot scraping sudah ada, sehingga fokus modul ini adalah **mengintegrasikan bot** ke database dan antarmuka WaterVapor.
+Menampilkan game PC yang baru dirilis di Steam. Bot scraping sudah ada, sehingga fokus modul ini adalah **mengintegrasikan bot** ke database dan antarmuka WaterMist.
 
 ## 2. Sumber Data
 

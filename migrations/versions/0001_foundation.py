@@ -1,4 +1,4 @@
-"""Create WaterVapor foundation tables."""
+"""Create WaterMist foundation tables."""
 
 from alembic import op
 import sqlalchemy as sa

@@ -10,4 +10,4 @@ def dashboard():
 
 @main_bp.get("/health")
 def health():
-    return {"status": "ok", "service": "watervapor"}
+    return {"status": "ok", "service": "watermist"}

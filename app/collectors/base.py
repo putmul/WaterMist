@@ -12,4 +12,4 @@ class BaseCollector(ABC):
 
     @abstractmethod
     def normalize(self, record):
-        """Convert one raw record to the internal WaterVapor format."""
+        """Convert one raw record to the internal WaterMist format."""

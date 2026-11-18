@@ -1,4 +1,4 @@
-"""WaterVapor application entry point."""
+"""WaterMist application entry point."""
 
 from app import create_app
 

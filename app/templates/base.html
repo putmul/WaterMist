@@ -3,12 +3,12 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{% block title %}WaterVapor{% endblock %}</title>
+    <title>{% block title %}WaterMist{% endblock %}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
     <nav>
-        <a href="{{ url_for('main.dashboard') }}">WaterVapor</a>
+        <a href="{{ url_for('main.dashboard') }}">WaterMist</a>
         <a href="{{ url_for('releases.releases') }}">Recently Released</a>
         <a href="{{ url_for('deals.deals') }}">Deals</a>
         <a href="{{ url_for('recommendations.recommendations') }}">Recommendations</a>

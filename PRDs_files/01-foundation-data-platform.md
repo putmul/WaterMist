@@ -1,6 +1,6 @@
 # PRD Modul 01 — Foundation & Data Platform
 
-**Proyek:** WaterVapor | **Versi:** 1.0 | **Tanggal:** 18 November 2026 | **Status:** Draft
+**Proyek:** WaterMist | **Versi:** 1.0 | **Tanggal:** 18 November 2026 | **Status:** Draft
 **Dependensi:** tidak ada (modul dasar) | **Dibutuhkan oleh:** semua modul
 
 ## 1. Tujuan
@@ -26,7 +26,7 @@ Menyediakan fondasi teknis yang dipakai semua modul: struktur proyek, skema data
 ## 4. Struktur Folder
 
 ```text
-watervapor/
+watermist/
 ├── app/
 │   ├── __init__.py
 │   ├── models/        (game.py, store.py, deal.py, user.py)

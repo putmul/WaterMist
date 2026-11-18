@@ -1,6 +1,6 @@
 # PRD Modul 02 — Game Deals
 
-**Proyek:** WaterVapor | **Versi:** 1.0 | **Tanggal:** 18 November 2026 | **Status:** Draft (belum dikembangkan)
+**Proyek:** WaterMist | **Versi:** 1.0 | **Tanggal:** 18 November 2026 | **Status:** Draft (belum dikembangkan)
 **Dependensi:** Modul 01 | **Dikonsumsi oleh:** Modul 06 (Deals page, Best Deals, Game Detail)
 
 ## 1. Tujuan
@@ -16,11 +16,11 @@ Mengumpulkan informasi game yang sedang diskon dari Steam dan toko PC lain, meny
 
 ### 2.1. Endpoint CheapShark
 
-| Kebutuhan | Endpoint | Pemakaian di WaterVapor |
+| Kebutuhan | Endpoint | Pemakaian di WaterMist |
 |-----------|----------|-------------------------|
 | Daftar deal | `GET /deals` | Sumber utama deal harian (paginasi, urut diskon) |
 | Cari game berdasarkan judul | `GET /games?title=...` | Fallback matching jika tidak ada Steam App ID |
-| Cari berdasarkan Steam App ID | `GET /games?steamAppID=...` | Mapping game WaterVapor ↔ game CheapShark |
+| Cari berdasarkan Steam App ID | `GET /games?steamAppID=...` | Mapping game WaterMist ↔ game CheapShark |
 | Semua deal suatu game | `GET /games?id=...` | Perbandingan harga antar toko di Game Detail |
 | Daftar toko | `GET /stores` | Mengisi/menyinkronkan tabel `stores` |
 | Detail satu deal | `GET /deals?id=...` | Verifikasi/refresh satu deal tertentu |

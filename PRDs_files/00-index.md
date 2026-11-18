@@ -1,12 +1,12 @@
-# WaterVapor — Index PRD per Modul
+# WaterMist — Index PRD per Modul
 
 **Versi:** 1.0 | **Tanggal:** 18 November 2026 | **Status:** Draft | **Platform:** Web App (PC Games)
 
-Dokumen ini adalah hasil pemecahan PRD WaterVapor v1.0 menjadi beberapa PRD per modul. Setiap modul bisa dikerjakan dan di-review terpisah.
+Dokumen ini adalah hasil pemecahan PRD WaterMist v1.0 menjadi beberapa PRD per modul. Setiap modul bisa dikerjakan dan di-review terpisah.
 
 ## 1. Ringkasan Produk
 
-WaterVapor adalah platform agregasi informasi dan rekomendasi game PC: memantau diskon dari berbagai toko, melacak game baru, dan memberi rekomendasi personal (populer maupun *hidden gems*).
+WaterMist adalah platform agregasi informasi dan rekomendasi game PC: memantau diskon dari berbagai toko, melacak game baru, dan memberi rekomendasi personal (populer maupun *hidden gems*).
 
 **Visi:** Menjadi platform pencarian dan rekomendasi game PC yang membantu pengguna menemukan game yang tepat dengan harga terbaik.
 

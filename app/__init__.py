@@ -1,4 +1,4 @@
-"""WaterVapor Flask application factory."""
+"""WaterMist Flask application factory."""
 
 import logging
 

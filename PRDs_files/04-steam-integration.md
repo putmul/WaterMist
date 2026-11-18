@@ -1,11 +1,11 @@
 # PRD Modul 04 — Steam Integration & User Data
 
-**Proyek:** WaterVapor | **Versi:** 1.0 | **Tanggal:** 18 November 2026 | **Status:** Draft (belum dikembangkan)
+**Proyek:** WaterMist | **Versi:** 1.0 | **Tanggal:** 18 November 2026 | **Status:** Draft (belum dikembangkan)
 **Dependensi:** Modul 01, 03 (data `games`) | **Dikonsumsi oleh:** Modul 05, 06
 
 ## 1. Tujuan
 
-Memungkinkan pengguna menghubungkan akun Steam (via Steam ID / Profile URL) agar WaterVapor dapat mengambil library dan playtime sebagai dasar preferensi, serta menyediakan jalur manual (game favorit) jika data Steam tidak dapat diakses.
+Memungkinkan pengguna menghubungkan akun Steam (via Steam ID / Profile URL) agar WaterMist dapat mengambil library dan playtime sebagai dasar preferensi, serta menyediakan jalur manual (game favorit) jika data Steam tidak dapat diakses.
 
 ## 2. Sumber Data
 
@@ -28,7 +28,7 @@ PRD awal memakai `user_id` di banyak tabel, tetapi **tidak mendefinisikan tabel 
 
 | Opsi | Deskripsi | Konsekuensi |
 |------|-----------|-------------|
-| A. Akun WaterVapor (email/username + password) | Registrasi dan login sendiri | Perlu hashing password, session, reset password |
+| A. Akun WaterMist (email/username + password) | Registrasi dan login sendiri | Perlu hashing password, session, reset password |
 | B. Sesi anonim | `user_id` dibuat otomatis per browser (cookie), Steam ID tersimpan di sesi | Paling sederhana untuk MVP; data hilang jika cookie dihapus |
 | C. Steam OpenID login | Login lewat Steam tanpa password | Identitas jelas dan tanpa password; kompleksitas integrasi lebih tinggi |
 
@@ -123,7 +123,7 @@ Input Steam ID/URL → validasi → resolve ke SteamID64 → panggil Steam Web A
 - [ ] Membuat fitur input Steam ID dan validasi
 - [ ] Mengintegrasikan Steam Web API (resolve vanity, owned games)
 - [ ] Mengambil daftar game pengguna dan playtime
-- [ ] Menghubungkan data Steam dengan database WaterVapor (mapping App ID)
+- [ ] Menghubungkan data Steam dengan database WaterMist (mapping App ID)
 - [ ] Menyediakan input game favorit manual
 - [ ] Mencatat `user_interactions`
 - [ ] Menambahkan sinkronisasi harian ke scheduler

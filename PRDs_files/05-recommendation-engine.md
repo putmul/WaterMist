@@ -1,6 +1,6 @@
 # PRD Modul 05 — Recommendation Engine
 
-**Proyek:** WaterVapor | **Versi:** 1.0 | **Tanggal:** 18 November 2026 | **Status:** Draft (belum dikembangkan)
+**Proyek:** WaterMist | **Versi:** 1.0 | **Tanggal:** 18 November 2026 | **Status:** Draft (belum dikembangkan)
 **Dependensi:** Modul 01 (genre/tag), 03 (metadata game), 04 (profil pengguna) | **Dikonsumsi oleh:** Modul 06
 
 ## 1. Tujuan

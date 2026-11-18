@@ -1,4 +1,4 @@
-"""Compatibility entry point for the migrated WaterVapor application.
+"""Compatibility entry point for the migrated WaterMist application.
 
 Use ``python run.py`` for the Flask application and daily scheduler.
 """
@@ -22,7 +22,7 @@ def jalankan_pipeline(limit=None):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="WaterVapor Steam release collector")
+    parser = argparse.ArgumentParser(description="WaterMist Steam release collector")
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument("--test-scrape", action="store_true", help="ambil maksimal 5 game")
     mode.add_argument("--once", action="store_true", help="jalankan sinkronisasi sekali")
