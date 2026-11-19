@@ -55,6 +55,9 @@ class Config:
     USER_AGENT = os.getenv(
         "USER_AGENT", "WaterMist/1.0 (academic project; contact: local-project)"
     )
+    STEAM_429_BACKOFF_SECONDS = _as_int(
+        os.getenv("STEAM_429_BACKOFF_SECONDS"), 5
+    )
 
     STEAM_ROBOTS_URL = "https://store.steampowered.com/robots.txt"
     STEAM_SEARCH_URL = (
@@ -65,6 +68,20 @@ class Config:
     STEAM_MAX_PAGES = _as_int(os.getenv("STEAM_MAX_PAGES"), 100)
     STEAM_REGION = os.getenv("STEAM_REGION", "ID")
     STEAM_CURRENCY = os.getenv("STEAM_CURRENCY", "IDR")
+    STEAM_DEALS_SEARCH_URL = os.getenv(
+        "STEAM_DEALS_SEARCH_URL",
+        "https://store.steampowered.com/search/?specials=1&category1=998&page={page}",
+    )
+    STEAM_DEALS_MAX_PAGES = _as_int(os.getenv("STEAM_DEALS_MAX_PAGES"), 100)
+    CHEAPSHARK_ENABLED = _as_bool(os.getenv("CHEAPSHARK_ENABLED"), default=True)
+    CHEAPSHARK_BASE_URL = os.getenv(
+        "CHEAPSHARK_BASE_URL", "https://www.cheapshark.com/api/1.0"
+    )
+    CHEAPSHARK_MAX_PAGES = _as_int(os.getenv("CHEAPSHARK_MAX_PAGES"), 20)
+    CHEAPSHARK_PAGE_SIZE = _as_int(os.getenv("CHEAPSHARK_PAGE_SIZE"), 60)
+    CHEAPSHARK_REGION = os.getenv("CHEAPSHARK_REGION", "US")
+    CHEAPSHARK_CURRENCY = os.getenv("CHEAPSHARK_CURRENCY", "USD")
+    DEALS_ENABLED = _as_bool(os.getenv("DEALS_ENABLED"), default=True)
     NON_BASE_KEYWORDS = (
         "soundtrack",
         "dlc",

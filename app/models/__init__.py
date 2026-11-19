@@ -1,11 +1,13 @@
 """SQLAlchemy model exports."""
 
 from .game import Game, GameGenre, GameProduct, GameTag, Genre, PriceHistory
+from .deal import Deal
 from .job_run import JobRun
 from .store import Store
 
 __all__ = [
     "Game",
+    "Deal",
     "GameGenre",
     "GameProduct",
     "GameTag",

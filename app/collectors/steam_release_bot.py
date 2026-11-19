@@ -185,10 +185,23 @@ class SteamReleaseBot(BaseCollector):
         self.robots = None
         self.request_count = 0
         self.failed_urls = []
+        self.last_request_at = None
+
+    def _throttle(self):
+        """Ensure at least the configured delay between Steam request starts."""
+        if not self.delay:
+            return
+        now = time.monotonic()
+        if self.last_request_at is not None:
+            remaining = self.delay - (now - self.last_request_at)
+            if remaining > 0:
+                time.sleep(remaining)
+        self.last_request_at = time.monotonic()
 
     def check_robots_txt(self):
         if self.robots is not None:
             return self.robots
+        self._throttle()
         response = self.session.get(
             Config.STEAM_ROBOTS_URL, timeout=Config.REQUEST_TIMEOUT_SECONDS
         )
@@ -205,8 +218,7 @@ class SteamReleaseBot(BaseCollector):
             raise PermissionError(f"robots.txt melarang URL: {url}")
         for attempt in range(1, Config.REQUEST_MAX_RETRIES + 1):
             try:
-                if self.delay:
-                    time.sleep(self.delay)
+                self._throttle()
                 response = self.session.get(url, timeout=Config.REQUEST_TIMEOUT_SECONDS)
                 self.request_count += 1
                 if response.status_code == 429:
@@ -218,7 +230,11 @@ class SteamReleaseBot(BaseCollector):
                 if attempt == Config.REQUEST_MAX_RETRIES:
                     break
                 log.warning("Steam request gagal (%d): %s", attempt, exc)
-                time.sleep(2**attempt + random.random())
+                if "429" in str(exc):
+                    backoff = Config.STEAM_429_BACKOFF_SECONDS * attempt
+                else:
+                    backoff = 2**attempt
+                time.sleep(backoff + random.random())
         self.failed_urls.append(url)
         log.error("Gagal mengambil URL Steam: %s", url)
         return None

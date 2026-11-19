@@ -4,6 +4,7 @@ import atexit
 import logging
 
 from app.services.game_service import GameService
+from app.services.deal_service import DealService
 
 log = logging.getLogger(__name__)
 _scheduler = None
@@ -18,16 +19,23 @@ def start_scheduler(app):
 
     _scheduler = BackgroundScheduler(timezone=app.config["TIMEZONE"])
 
-    def run_release_sync():
+    def run_daily_sync():
         with app.app_context():
-            GameService().sync_recently_released()
+            release_result = GameService().sync_recently_released()
+            if app.config.get("DEALS_ENABLED", True):
+                deal_result = DealService().sync_daily()
+                log.info(
+                    "Daily sync selesai: releases=%s deals=%s",
+                    release_result.get("status"),
+                    deal_result.get("status"),
+                )
 
     _scheduler.add_job(
-        run_release_sync,
+        run_daily_sync,
         trigger="cron",
         hour=app.config["SCHEDULER_HOUR"],
         minute=app.config["SCHEDULER_MINUTE"],
-        id="steam_releases",
+        id="watermist_daily_sync",
         replace_existing=True,
         misfire_grace_time=app.config["SCHEDULER_MISFIRE_GRACE_TIME"],
         max_instances=1,
@@ -37,7 +45,7 @@ def start_scheduler(app):
         lambda: _scheduler.shutdown(wait=False) if _scheduler.running else None
     )
     log.info(
-        "Scheduler aktif: Steam releases setiap hari %02d:%02d %s",
+        "Scheduler aktif: daily sync setiap hari %02d:%02d %s",
         app.config["SCHEDULER_HOUR"],
         app.config["SCHEDULER_MINUTE"],
         app.config["TIMEZONE"],

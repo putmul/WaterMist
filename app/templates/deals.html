@@ -1,3 +1,65 @@
 {% extends "base.html" %}
 {% block title %}Deals - WaterMist{% endblock %}
-{% block content %}<h1>Deals</h1><p>Modul deals belum diimplementasikan.</p>{% endblock %}
+{% block content %}
+<div class="page-heading">
+    <div>
+        <h1>Game Deals</h1>
+        {% if updated_at %}<p class="muted">Terakhir diperbarui: {{ updated_at }}</p>{% endif %}
+    </div>
+</div>
+
+<form class="deal-filters" method="get">
+    <label>Game
+        <input type="search" name="q" value="{{ q }}" placeholder="Cari game">
+    </label>
+    <label>Toko
+        <select name="store">
+            <option value="">Semua toko</option>
+            {% for store_item in stores %}
+            <option value="{{ store_item.name }}" {% if store == store_item.name %}selected{% endif %}>{{ store_item.name }}</option>
+            {% endfor %}
+        </select>
+    </label>
+    <label>Diskon minimum (%)
+        <input type="number" min="0" max="100" step="0.01" name="min_discount" value="{{ min_discount or '' }}">
+    </label>
+    <label>Harga maksimum
+        <input type="number" min="0" step="0.01" name="max_price" value="{{ max_price or '' }}">
+    </label>
+    <label>Urutkan
+        <select name="sort">
+            <option value="discount" {% if sort == 'discount' %}selected{% endif %}>Diskon terbesar</option>
+            <option value="price" {% if sort == 'price' %}selected{% endif %}>Harga terendah</option>
+            <option value="name" {% if sort == 'name' %}selected{% endif %}>Nama</option>
+            <option value="store" {% if sort == 'store' %}selected{% endif %}>Toko</option>
+        </select>
+    </label>
+    <button type="submit">Terapkan</button>
+    <a class="reset-link" href="{{ url_for('deals.deals') }}">Reset</a>
+</form>
+
+{% if deals %}
+<section class="game-grid">
+{% for deal in deals %}
+    {% set product = deal.game_product %}
+    <article class="game-card deal-card">
+        {% if product.game.cover_image %}<img src="{{ product.game.cover_image }}" alt="{{ product.game.name }}">{% endif %}
+        <h2>{{ product.game.name }}</h2>
+        <p class="deal-store">{{ product.store.name }} · {{ product.currency }} ({{ product.region }})</p>
+        <p><s>{{ product.currency }} {{ '%.2f'|format(deal.normal_price) }}</s>
+            <strong>{{ product.currency }} {{ '%.2f'|format(deal.sale_price) }}</strong></p>
+        <p class="discount">-{{ '%.0f'|format(deal.discount_percent) }}%</p>
+        <a class="deal-button" href="{{ deal.deal_url }}" target="_blank" rel="noopener">Lihat deal</a>
+    </article>
+{% endfor %}
+</section>
+
+<nav class="pagination" aria-label="Pagination">
+    {% if pagination.has_prev %}<a href="{{ url_for('deals.deals', q=q, store=store, min_discount=min_discount, max_discount=max_discount, min_price=min_price, max_price=max_price, sort=sort, page=pagination.prev_num) }}">Sebelumnya</a>{% endif %}
+    <span>Halaman {{ pagination.page }} dari {{ pagination.pages or 1 }}</span>
+    {% if pagination.has_next %}<a href="{{ url_for('deals.deals', q=q, store=store, min_discount=min_discount, max_discount=max_discount, min_price=min_price, max_price=max_price, sort=sort, page=pagination.next_num) }}">Berikutnya</a>{% endif %}
+</nav>
+{% else %}
+<div class="empty-state"><p>Belum ada deal yang sesuai dengan filter.</p></div>
+{% endif %}
+{% endblock %}

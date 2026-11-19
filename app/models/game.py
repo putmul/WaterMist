@@ -56,6 +56,9 @@ class GameProduct(db.Model):
     prices = db.relationship(
         "PriceHistory", back_populates="game_product", cascade="all, delete-orphan"
     )
+    deals = db.relationship(
+        "Deal", back_populates="game_product", cascade="all, delete-orphan"
+    )
 
 
 class PriceHistory(db.Model):

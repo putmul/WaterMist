@@ -1,1 +1,406 @@
-"""Deal business logic reserved for Module 02."""
+"""Deal synchronization, matching, persistence, and query services."""
+
+import logging
+from datetime import datetime
+from decimal import Decimal
+from zoneinfo import ZoneInfo
+
+from flask import current_app
+from sqlalchemy import and_, func, not_
+from sqlalchemy.orm import aliased
+
+from app.collectors.cheapshark_client import CheapSharkClient
+from app.collectors.steam_scraper import SteamDealsCollector
+from app.extensions import db
+from app.models.deal import Deal
+from app.models.game import Game, GameProduct, PriceHistory
+from app.models.job_run import JobRun
+from app.models.store import Store
+from app.services.game_service import normalize_game_name
+
+log = logging.getLogger(__name__)
+
+
+def validate_deal_record(record):
+    errors = []
+    for field in ("name", "external_product_id", "store_name", "deal_url", "source"):
+        if not record.get(field):
+            errors.append(f"{field} wajib diisi")
+    for field in ("normal_price", "sale_price"):
+        value = record.get(field)
+        if not isinstance(value, Decimal) or value < 0:
+            errors.append(f"{field} harus berupa harga >= 0")
+    discount = record.get("discount_percent")
+    if not isinstance(discount, (int, float, Decimal)) or not 0 <= discount <= 100:
+        errors.append("discount_percent harus berada di antara 0 dan 100")
+    if not record.get("region") or not record.get("currency"):
+        errors.append("region dan currency wajib diisi")
+    return errors
+
+
+class DealService:
+    job_name = "game_deals_daily"
+
+    def sync_daily(self, steam_collector=None, cheapshark_client=None):
+        """Run both sources while keeping each source isolated on failure."""
+        job_run = JobRun(job_name=self.job_name, status="running")
+        db.session.add(job_run)
+        db.session.commit()
+
+        fetched = 0
+        saved = 0
+        errors = []
+        steam_collector = steam_collector or SteamDealsCollector()
+        cheapshark_client = cheapshark_client or CheapSharkClient()
+
+        if current_app.config.get("CHEAPSHARK_ENABLED", True):
+            try:
+                self._sync_stores(cheapshark_client)
+                db.session.commit()
+            except Exception as exc:  # pragma: no cover - exercised with integration failures
+                errors.append(f"stores: {exc}")
+                db.session.rollback()
+                log.exception("Sinkronisasi stores CheapShark gagal")
+
+        source_specs = [("steam_scraper", steam_collector)]
+        if current_app.config.get("CHEAPSHARK_ENABLED", True):
+            source_specs.append(("cheapshark", cheapshark_client))
+
+        for source, collector in source_specs:
+            try:
+                raw_records = collector.fetch()
+                normalized_records = [collector.normalize(record) for record in raw_records]
+                fetched += len(normalized_records)
+                seen_product_ids = set()
+                invalid = 0
+                for record in normalized_records:
+                    validation_errors = validate_deal_record(record)
+                    if validation_errors:
+                        invalid += 1
+                        log.warning(
+                            "Deal %s dilewati: %s",
+                            record.get("name"),
+                            "; ".join(validation_errors),
+                        )
+                        continue
+                    try:
+                        with db.session.begin_nested():
+                            deal = self._upsert_record(record, cheapshark_client)
+                            seen_product_ids.add(deal.game_product_id)
+                            saved += 1
+                    except Exception as exc:
+                        invalid += 1
+                        log.exception("Gagal menyimpan deal %s", record.get("name"))
+                        continue
+
+                if invalid:
+                    errors.append(f"{source}: {invalid} record invalid/gagal disimpan")
+                # An empty or entirely invalid response can indicate a parser
+                # change or an upstream problem. Never deactivate the complete
+                # previous source snapshot in that situation.
+                if (
+                    getattr(collector, "last_fetch_complete", False)
+                    and normalized_records
+                    and seen_product_ids
+                ):
+                    self._mark_missing_deals_inactive(source, seen_product_ids)
+                # Commit each source independently so a later source failure cannot
+                # roll back data that was already collected successfully.
+                db.session.commit()
+            except Exception as exc:
+                errors.append(f"{source}: {exc}")
+                db.session.rollback()
+                log.exception("Sinkronisasi %s gagal", source)
+
+        try:
+            self._save_price_snapshots()
+            db.session.commit()
+        except Exception as exc:
+            db.session.rollback()
+            errors.append(f"price_history: {exc}")
+            log.exception("Snapshot harga gagal disimpan")
+
+        job_run = db.session.get(JobRun, job_run.id)
+        job_run.finished_at = datetime.utcnow()
+        job_run.records_fetched = fetched
+        job_run.records_saved = saved
+        job_run.status = "failed" if not saved and errors else "partial" if errors else "success"
+        job_run.error_message = " | ".join(errors)[:4000] if errors else None
+        db.session.commit()
+        return {
+            "status": job_run.status,
+            "records_fetched": fetched,
+            "records_saved": saved,
+            "errors": errors,
+        }
+
+    def _sync_stores(self, client):
+        for record in client.fetch_stores():
+            external_id = str(record.get("storeID"))
+            name = (record.get("storeName") or f"CheapShark Store {external_id}").strip()
+            store = Store.query.filter_by(name=name).one_or_none()
+            if store is None:
+                store = Store(name=name)
+                db.session.add(store)
+            store.external_store_id = external_id
+            store.source = "cheapshark"
+            store.website_url = record.get("storeLink") or store.website_url
+        db.session.flush()
+
+    def _get_or_create_store(self, record):
+        name = record["store_name"]
+        source = record["source"]
+        if name.casefold() == "steam":
+            store = Store.query.filter(func.lower(Store.name) == "steam").one_or_none()
+        else:
+            store = None
+            if record.get("store_external_id"):
+                store = Store.query.filter_by(
+                    external_store_id=str(record["store_external_id"]), source="cheapshark"
+                ).one_or_none()
+            if store is None:
+                store = Store.query.filter_by(name=name).one_or_none()
+        if store is None:
+            store = Store(
+                name=name,
+                external_store_id=record.get("store_external_id"),
+                source="steam" if source == "steam_scraper" else "cheapshark",
+                website_url=(
+                    "https://store.steampowered.com/"
+                    if name.casefold() == "steam"
+                    else None
+                ),
+            )
+            db.session.add(store)
+            db.session.flush()
+        return store
+
+    def _find_game(self, record, store, cheapshark_client):
+        steam_app_id = record.get("steam_app_id")
+        if steam_app_id:
+            game = Game.query.filter_by(steam_app_id=str(steam_app_id)).one_or_none()
+            if game:
+                return game
+
+        product = GameProduct.query.filter_by(
+            store_id=store.id,
+            external_product_id=str(record["external_product_id"]),
+            region=record["region"],
+        ).one_or_none()
+        if product:
+            return product.game
+
+        normalized_name = normalize_game_name(record["name"])
+        for game in Game.query.all():
+            if normalize_game_name(game.name) == normalized_name:
+                return game
+
+        if record["source"] == "cheapshark" and normalized_name:
+            try:
+                suggestions = cheapshark_client.fetch_games_by_title(record["name"])
+                for suggestion in suggestions:
+                    suggestion_name = suggestion.get("title") or ""
+                    if normalize_game_name(suggestion_name) != normalized_name:
+                        continue
+                    suggestion_app_id = suggestion.get("steamAppID")
+                    if suggestion_app_id:
+                        game = Game.query.filter_by(
+                            steam_app_id=str(suggestion_app_id)
+                        ).one_or_none()
+                        if game:
+                            return game
+                        record["steam_app_id"] = str(suggestion_app_id)
+                    break
+            except Exception as exc:
+                log.warning("Fallback matching CheapShark gagal untuk %s: %s", record["name"], exc)
+
+        game = Game(name=record["name"], steam_app_id=record.get("steam_app_id"))
+        db.session.add(game)
+        db.session.flush()
+        return game
+
+    def _upsert_record(self, record, cheapshark_client):
+        store = self._get_or_create_store(record)
+        game = self._find_game(record, store, cheapshark_client)
+        if record.get("cover_image") and not game.cover_image:
+            game.cover_image = record["cover_image"]
+
+        product = GameProduct.query.filter_by(
+            store_id=store.id,
+            external_product_id=str(record["external_product_id"]),
+            region=record["region"],
+        ).one_or_none()
+        if product is None:
+            product = GameProduct(
+                game_id=game.id,
+                store_id=store.id,
+                external_product_id=str(record["external_product_id"]),
+                product_url=record.get("product_url"),
+                region=record["region"],
+                currency=record["currency"],
+            )
+            db.session.add(product)
+            db.session.flush()
+        else:
+            product.game_id = game.id
+            product.product_url = record.get("product_url") or product.product_url
+            product.currency = record["currency"]
+
+        now = datetime.utcnow()
+        deal = Deal.query.filter_by(game_product_id=product.id, source=record["source"]).one_or_none()
+        if deal is None:
+            deal = Deal(game_product_id=product.id, source=record["source"])
+            db.session.add(deal)
+        deal.normal_price = record["normal_price"]
+        deal.sale_price = record["sale_price"]
+        deal.discount_percent = record["discount_percent"]
+        deal.deal_url = record["deal_url"]
+        deal.deal_end_date = record.get("deal_end_date")
+        deal.fetched_at = now
+        deal.last_seen_at = now
+        deal.is_active = True
+        deal.external_deal_id = record.get("external_deal_id")
+        db.session.flush()
+        return deal
+
+    @staticmethod
+    def _mark_missing_deals_inactive(source, seen_product_ids):
+        for deal in Deal.query.filter_by(source=source, is_active=True).all():
+            if deal.game_product_id not in seen_product_ids:
+                deal.is_active = False
+
+    def _save_price_snapshots(self):
+        today = datetime.now(ZoneInfo(current_app.config["TIMEZONE"])).date()
+        products = (
+            GameProduct.query.join(Deal)
+            .filter(Deal.is_active.is_(True))
+            .distinct()
+            .all()
+        )
+        for product in products:
+            active_deals = [deal for deal in product.deals if deal.is_active]
+            if not active_deals:
+                continue
+            deal = sorted(
+                active_deals,
+                key=lambda item: 0 if item.source == "steam_scraper" else 1,
+            )[0]
+            snapshot = PriceHistory.query.filter_by(
+                game_product_id=product.id, recorded_date=today
+            ).one_or_none()
+            if snapshot is None:
+                snapshot = PriceHistory(
+                    game_product_id=product.id,
+                    recorded_date=today,
+                )
+                db.session.add(snapshot)
+            snapshot.price = deal.sale_price
+            snapshot.regular_price = deal.normal_price
+            snapshot.currency = product.currency
+            snapshot.source = deal.source
+
+    def list_active_deals(self, filters=None):
+        filters = filters or {}
+        stmt = (
+            db.select(Deal)
+            .join(Deal.game_product)
+            .join(GameProduct.game)
+            .join(GameProduct.store)
+            .where(Deal.is_active.is_(True))
+        )
+        steam_deal = aliased(Deal)
+        steam_product = aliased(GameProduct)
+        steam_store = aliased(Store)
+        steam_deal_exists = (
+            db.select(steam_deal.id)
+            .join(steam_product, steam_deal.game_product_id == steam_product.id)
+            .join(steam_store, steam_product.store_id == steam_store.id)
+            .where(
+                steam_product.game_id == GameProduct.game_id,
+                func.lower(steam_store.name) == "steam",
+                steam_deal.source == "steam_scraper",
+                steam_deal.is_active.is_(True),
+            )
+            .exists()
+        )
+        stmt = stmt.where(
+            not_(
+                and_(
+                    Deal.source == "cheapshark",
+                    func.lower(Store.name) == "steam",
+                    steam_deal_exists,
+                )
+            )
+        )
+        if filters.get("q"):
+            stmt = stmt.where(Game.name.ilike(f"%{filters['q']}%"))
+        if filters.get("store"):
+            stmt = stmt.where(Store.name == filters["store"])
+        if filters.get("min_discount") is not None:
+            stmt = stmt.where(Deal.discount_percent >= filters["min_discount"])
+        if filters.get("max_discount") is not None:
+            stmt = stmt.where(Deal.discount_percent <= filters["max_discount"])
+        if filters.get("min_price") is not None:
+            stmt = stmt.where(Deal.sale_price >= filters["min_price"])
+        if filters.get("max_price") is not None:
+            stmt = stmt.where(Deal.sale_price <= filters["max_price"])
+
+        sort = filters.get("sort", "discount")
+        if sort == "price":
+            stmt = stmt.order_by(Deal.sale_price.asc(), Game.name.asc())
+        elif sort == "name":
+            stmt = stmt.order_by(Game.name.asc(), Deal.sale_price.asc())
+        elif sort == "store":
+            stmt = stmt.order_by(Store.name.asc(), Game.name.asc())
+        else:
+            stmt = stmt.order_by(Deal.discount_percent.desc(), Game.name.asc())
+        return stmt
+
+    @staticmethod
+    def stores_with_active_deals():
+        return (
+            Store.query.join(GameProduct, Store.id == GameProduct.store_id)
+            .join(Deal, GameProduct.id == Deal.game_product_id)
+            .filter(Deal.is_active.is_(True))
+            .distinct()
+            .order_by(Store.name.asc())
+            .all()
+        )
+
+    @staticmethod
+    def get_active_deals_for_game(game_id):
+        """Return current, UI-visible deals for a Game Detail page."""
+        deals = (
+            Deal.query.join(GameProduct)
+            .filter(GameProduct.game_id == game_id, Deal.is_active.is_(True))
+            .join(GameProduct.store)
+            .order_by(Deal.sale_price.asc())
+            .all()
+        )
+        has_steam_scraper = any(
+            deal.source == "steam_scraper"
+            and deal.game_product.store.name.casefold() == "steam"
+            for deal in deals
+        )
+        if not has_steam_scraper:
+            return deals
+        return [
+            deal
+            for deal in deals
+            if not (
+                deal.source == "cheapshark"
+                and deal.game_product.store.name.casefold() == "steam"
+            )
+        ]
+
+    @staticmethod
+    def get_price_history(game_product_id):
+        return PriceHistory.query.filter_by(game_product_id=game_product_id).order_by(
+            PriceHistory.recorded_date.asc()
+        ).all()
+
+    @staticmethod
+    def last_updated():
+        return db.session.scalar(
+            db.select(func.max(Deal.fetched_at)).where(Deal.is_active.is_(True))
+        )
