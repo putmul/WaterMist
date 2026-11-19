@@ -8,13 +8,13 @@ from datetime import date, datetime, timedelta
 from decimal import Decimal, InvalidOperation
 from urllib import robotparser
 from urllib.parse import urljoin
-from zoneinfo import ZoneInfo
 
 import requests
 from bs4 import BeautifulSoup
 from requests.exceptions import RequestException
 
 from config import Config
+from app.utils.time import local_today
 
 from .base import BaseCollector
 
@@ -269,7 +269,10 @@ class SteamReleaseBot(BaseCollector):
         return parse_app_detail(html, app_id=app_id, url=url) if html else None
 
     def fetch(self, days=30, limit=None):
-        end_date = datetime.now(ZoneInfo(Config.TIMEZONE)).date()
+        self.failed_urls = []
+        # Deliberately stop at yesterday: Steam's current-day release list can
+        # still change during the day and should not enter the finalized feed.
+        end_date = local_today() - timedelta(days=1)
         start_date = end_date - timedelta(days=days - 1)
         records = []
         seen = set()
@@ -280,11 +283,16 @@ class SteamReleaseBot(BaseCollector):
             seen.add(app_id)
             try:
                 record = self.scrape_app_detail(candidate)
-            except (PermissionError, RequestException, RuntimeError):
-                raise
             except Exception as exc:
                 log.warning("Detail Steam App %s gagal diproses: %s", app_id, exc)
+                self.failed_urls.append(candidate.get("url") or str(app_id))
                 continue
+            # The search result has a usable release date even when the detail
+            # page omits it (for example, because Steam returns an age gate).
+            # Keep that date so a valid detail response is not discarded only
+            # because the detail markup is incomplete.
+            if record and not record.get("release_date"):
+                record["release_date"] = candidate.get("release_date")
             release_date = record.get("release_date") if record else None
             if not record or not release_date or not (start_date <= release_date <= end_date):
                 continue

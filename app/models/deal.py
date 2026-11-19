@@ -1,8 +1,7 @@
 """Current deals collected from Steam and CheapShark."""
 
-from datetime import datetime
-
 from app.extensions import db
+from app.utils.time import local_now
 
 BIGINT = db.BigInteger().with_variant(db.Integer, "sqlite")
 
@@ -28,9 +27,9 @@ class Deal(db.Model):
     deal_url = db.Column(db.Text, nullable=False)
     deal_end_date = db.Column(db.DateTime)
     source = db.Column(db.String(64), nullable=False, index=True)
-    fetched_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    fetched_at = db.Column(db.DateTime, nullable=False, default=local_now)
     is_active = db.Column(db.Boolean, nullable=False, default=True, index=True)
-    last_seen_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    last_seen_at = db.Column(db.DateTime, nullable=False, default=local_now)
     external_deal_id = db.Column(db.String(128), index=True)
 
     game_product = db.relationship("GameProduct", back_populates="deals")

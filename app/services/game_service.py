@@ -2,9 +2,8 @@
 
 import logging
 import re
-from datetime import date, datetime
+from datetime import date
 from decimal import Decimal
-from zoneinfo import ZoneInfo
 
 from flask import current_app
 
@@ -13,6 +12,7 @@ from app.extensions import db
 from app.models.game import Game, GameGenre, GameProduct, GameTag, Genre, PriceHistory
 from app.models.job_run import JobRun
 from app.models.store import Store
+from app.utils.time import local_now, local_today
 
 log = logging.getLogger(__name__)
 
@@ -61,34 +61,63 @@ class GameService:
             normalized_records = [collector.normalize(record) for record in raw_records]
             job_run.records_fetched = len(normalized_records)
             saved = 0
+            errors = []
+            failed_urls = getattr(collector, "failed_urls", [])
+            if failed_urls:
+                errors.append(
+                    f"{len(failed_urls)} request Steam gagal; data yang berhasil "
+                    "diambil tetap diproses"
+                )
             for record in normalized_records:
-                errors = validate_release_record(record)
-                if errors:
-                    log.warning("Record Steam dilewati: %s", "; ".join(errors))
+                validation_errors = validate_release_record(record)
+                if validation_errors:
+                    message = "; ".join(validation_errors)
+                    log.warning("Record Steam dilewati: %s", message)
+                    errors.append(f"{record.get('name') or 'unknown'}: {message}")
                     continue
-                self._upsert_release_record(record)
-                saved += 1
+                try:
+                    # Isolate one bad record so a constraint or malformed
+                    # value does not roll back all valid releases in the job.
+                    with db.session.begin_nested():
+                        self._upsert_release_record(record)
+                    saved += 1
+                except Exception as exc:
+                    message = f"{record.get('name') or 'unknown'}: {exc}"
+                    errors.append(message)
+                    log.exception("Gagal menyimpan release %s", record.get("name"))
 
             db.session.commit()
-            job_run.finished_at = datetime.utcnow()
+            job_run.finished_at = local_now()
             job_run.status = "success"
             job_run.records_saved = saved
+            if errors and saved:
+                job_run.status = "partial"
+                job_run.error_message = " | ".join(errors)[:4000]
+            elif errors and not saved:
+                job_run.status = "failed"
+                job_run.error_message = " | ".join(errors)[:4000]
             db.session.commit()
             return {
-                "status": "success",
+                "status": job_run.status,
                 "records_fetched": len(normalized_records),
                 "records_saved": saved,
+                "errors": errors,
             }
         except Exception as exc:
             db.session.rollback()
             failed_run = db.session.get(JobRun, job_run.id)
             if failed_run:
-                failed_run.finished_at = datetime.utcnow()
+                failed_run.finished_at = local_now()
                 failed_run.status = "failed"
                 failed_run.error_message = str(exc)[:4000]
                 db.session.commit()
             log.exception("Job %s gagal", self.job_name)
-            return {"status": "failed", "records_fetched": 0, "records_saved": 0}
+            return {
+                "status": "failed",
+                "records_fetched": 0,
+                "records_saved": 0,
+                "errors": [str(exc)],
+            }
 
     def _upsert_release_record(self, record):
         app_id = record["steam_app_id"]
@@ -154,7 +183,7 @@ class GameService:
                 db.session.add(GameTag(game_id=game.id, tag=tag_name))
 
         if record.get("sale_price") is not None and record.get("regular_price") is not None:
-            today = datetime.now(ZoneInfo(current_app.config["TIMEZONE"])).date()
+            today = local_today()
             snapshot = PriceHistory.query.filter_by(
                 game_product_id=product.id, recorded_date=today
             ).one_or_none()

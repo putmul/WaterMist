@@ -9,6 +9,9 @@
     <form method="post" action="{{ url_for('main.sync_deals') }}">
         <button class="deal-button" type="submit">Scrape Deals Sekarang</button>
     </form>
+    <form method="post" action="{{ url_for('main.sync_releases') }}">
+        <button class="release-button" type="submit">Scrape New Releases Sekarang</button>
+    </form>
 </section>
 {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}

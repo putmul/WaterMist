@@ -1,9 +1,10 @@
 """Core game, product, metadata, and price history models."""
 
-from datetime import date, datetime
+from datetime import date
 
 from app.extensions import db
 from app.models.store import Store
+from app.utils.time import local_now
 
 BIGINT = db.BigInteger().with_variant(db.Integer, "sqlite")
 
@@ -19,9 +20,9 @@ class Game(db.Model):
     cover_image = db.Column(db.Text)
     developer = db.Column(db.String(255))
     publisher = db.Column(db.String(255))
-    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, nullable=False, default=local_now)
     updated_at = db.Column(
-        db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow
+        db.DateTime, nullable=False, default=local_now, onupdate=local_now
     )
 
     products = db.relationship(
@@ -79,7 +80,7 @@ class PriceHistory(db.Model):
     price = db.Column(db.Numeric(12, 2), nullable=False)
     regular_price = db.Column(db.Numeric(12, 2), nullable=False)
     currency = db.Column(db.String(8), nullable=False)
-    recorded_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    recorded_at = db.Column(db.DateTime, nullable=False, default=local_now)
     recorded_date = db.Column(db.Date, nullable=False, default=date.today)
     source = db.Column(db.String(64), nullable=False)
 

@@ -1,8 +1,7 @@
 """Background collector execution history."""
 
-from datetime import datetime
-
 from app.extensions import db
+from app.utils.time import local_now
 
 BIGINT = db.BigInteger().with_variant(db.Integer, "sqlite")
 
@@ -12,7 +11,7 @@ class JobRun(db.Model):
 
     id = db.Column(BIGINT, primary_key=True, autoincrement=True)
     job_name = db.Column(db.String(100), nullable=False, index=True)
-    started_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    started_at = db.Column(db.DateTime, nullable=False, default=local_now)
     finished_at = db.Column(db.DateTime)
     status = db.Column(db.String(20), nullable=False, default="running")
     records_fetched = db.Column(db.Integer, nullable=False, default=0)

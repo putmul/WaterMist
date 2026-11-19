@@ -1,9 +1,7 @@
 """Deal synchronization, matching, persistence, and query services."""
 
 import logging
-from datetime import datetime
 from decimal import Decimal
-from zoneinfo import ZoneInfo
 
 from flask import current_app
 from sqlalchemy import and_, func, not_
@@ -17,6 +15,7 @@ from app.models.game import Game, GameProduct, PriceHistory
 from app.models.job_run import JobRun
 from app.models.store import Store
 from app.services.game_service import normalize_game_name
+from app.utils.time import local_now, local_today
 
 log = logging.getLogger(__name__)
 
@@ -121,7 +120,7 @@ class DealService:
             log.exception("Snapshot harga gagal disimpan")
 
         job_run = db.session.get(JobRun, job_run.id)
-        job_run.finished_at = datetime.utcnow()
+        job_run.finished_at = local_now()
         job_run.records_fetched = fetched
         job_run.records_saved = saved
         job_run.status = "failed" if not saved and errors else "partial" if errors else "success"
@@ -246,7 +245,7 @@ class DealService:
             product.product_url = record.get("product_url") or product.product_url
             product.currency = record["currency"]
 
-        now = datetime.utcnow()
+        now = local_now()
         deal = Deal.query.filter_by(game_product_id=product.id, source=record["source"]).one_or_none()
         if deal is None:
             deal = Deal(game_product_id=product.id, source=record["source"])
@@ -270,7 +269,7 @@ class DealService:
                 deal.is_active = False
 
     def _save_price_snapshots(self):
-        today = datetime.now(ZoneInfo(current_app.config["TIMEZONE"])).date()
+        today = local_today()
         products = (
             GameProduct.query.join(Deal)
             .filter(Deal.is_active.is_(True))

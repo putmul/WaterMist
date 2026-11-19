@@ -9,9 +9,14 @@ main { max-width: 1100px; margin: 2rem auto; padding: 0 1rem; }
 .page-heading { display: flex; justify-content: space-between; align-items: baseline; }
 .muted, .deal-store { color: #6b7280; }
 .deal-filters { display: flex; flex-wrap: wrap; gap: .75rem; align-items: end; margin: 1.5rem 0; padding: 1rem; background: white; border: 1px solid #e5e7eb; border-radius: .5rem; }
+.release-filters { display: flex; flex-wrap: wrap; gap: .75rem; align-items: end; margin: 1.5rem 0; padding: 1rem; background: white; border: 1px solid #e5e7eb; border-radius: .5rem; }
 .deal-filters label { display: flex; flex-direction: column; gap: .25rem; font-size: .85rem; }
+.release-filters label { display: flex; flex-direction: column; gap: .25rem; font-size: .85rem; }
 .deal-filters input, .deal-filters select, .deal-filters button { padding: .5rem; border: 1px solid #d1d5db; border-radius: .25rem; background: white; }
+.release-filters input, .release-filters button { padding: .5rem; border: 1px solid #d1d5db; border-radius: .25rem; background: white; }
 .deal-filters button, .deal-button { background: #2563eb; color: white; cursor: pointer; text-decoration: none; }
+.release-button { padding: .5rem .75rem; border: 0; border-radius: .25rem; background: #059669; color: white; cursor: pointer; }
+.release-filters button { background: #2563eb; color: white; cursor: pointer; }
 .deal-button { display: inline-block; padding: .5rem .75rem; border-radius: .25rem; }
 .reset-link { padding: .5rem 0; color: #374151; }
 .deal-card strong { display: block; font-size: 1.15rem; color: #111827; }
