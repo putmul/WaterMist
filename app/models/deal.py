@@ -29,7 +29,11 @@ class Deal(db.Model):
     source = db.Column(db.String(64), nullable=False, index=True)
     fetched_at = db.Column(db.DateTime, nullable=False, default=local_now)
     is_active = db.Column(db.Boolean, nullable=False, default=True, index=True)
+    is_on_sale = db.Column(db.Boolean, nullable=False, default=True, index=True)
     last_seen_at = db.Column(db.DateTime, nullable=False, default=local_now)
+    first_seen_at = db.Column(db.DateTime, default=local_now, index=True)
+    ended_at = db.Column(db.DateTime, index=True)
+    end_reason = db.Column(db.String(32))
     external_deal_id = db.Column(db.String(128), index=True)
 
     game_product = db.relationship("GameProduct", back_populates="deals")

@@ -14,6 +14,7 @@ from app.models.deal import Deal
 from app.models.game import Game, GameProduct, PriceHistory
 from app.models.job_run import JobRun
 from app.models.store import Store
+from app.services.deal_lifecycle import apply_deal_record, end_deal
 from app.services.game_service import normalize_game_name
 from app.utils.time import local_now, local_today
 
@@ -73,6 +74,18 @@ class DealService:
                 seen_product_ids = set()
                 invalid = 0
                 for record in normalized_records:
+                    if record.get("is_on_sale") is False:
+                        try:
+                            ended_deal = self._end_existing_record(record)
+                            if ended_deal:
+                                seen_product_ids.add(ended_deal.game_product_id)
+                                saved += 1
+                        except Exception:
+                            invalid += 1
+                            log.exception(
+                                "Gagal mengakhiri deal %s", record.get("name")
+                            )
+                        continue
                     validation_errors = validate_deal_record(record)
                     if validation_errors:
                         invalid += 1
@@ -85,8 +98,8 @@ class DealService:
                     try:
                         with db.session.begin_nested():
                             deal = self._upsert_record(record, cheapshark_client)
-                            seen_product_ids.add(deal.game_product_id)
-                            saved += 1
+                        seen_product_ids.add(deal.game_product_id)
+                        saved += 1
                     except Exception as exc:
                         invalid += 1
                         log.exception("Gagal menyimpan deal %s", record.get("name"))
@@ -103,6 +116,8 @@ class DealService:
                     and seen_product_ids
                 ):
                     self._mark_missing_deals_inactive(source, seen_product_ids)
+                if normalized_records and not getattr(collector, "failed_urls", []):
+                    self._expire_deals(source)
                 # Commit each source independently so a later source failure cannot
                 # roll back data that was already collected successfully.
                 db.session.commit()
@@ -250,23 +265,44 @@ class DealService:
         if deal is None:
             deal = Deal(game_product_id=product.id, source=record["source"])
             db.session.add(deal)
-        deal.normal_price = record["normal_price"]
-        deal.sale_price = record["sale_price"]
-        deal.discount_percent = record["discount_percent"]
-        deal.deal_url = record["deal_url"]
-        deal.deal_end_date = record.get("deal_end_date")
-        deal.fetched_at = now
-        deal.last_seen_at = now
-        deal.is_active = True
-        deal.external_deal_id = record.get("external_deal_id")
+        apply_deal_record(deal, record, now=now)
         db.session.flush()
+        return deal
+
+    def _end_existing_record(self, record):
+        store = self._get_or_create_store(record)
+        product = GameProduct.query.filter_by(
+            store_id=store.id,
+            external_product_id=str(record["external_product_id"]),
+            region=record["region"],
+        ).one_or_none()
+        if product is None:
+            return None
+        deal = Deal.query.filter_by(
+            game_product_id=product.id, source=record["source"]
+        ).one_or_none()
+        if deal is not None:
+            end_deal(deal, "not_on_sale")
+            db.session.flush()
         return deal
 
     @staticmethod
     def _mark_missing_deals_inactive(source, seen_product_ids):
         for deal in Deal.query.filter_by(source=source, is_active=True).all():
             if deal.game_product_id not in seen_product_ids:
-                deal.is_active = False
+                end_deal(deal, "not_found")
+
+    @staticmethod
+    def _expire_deals(source):
+        now = local_now()
+        reason = "fallback_14_days" if source == "steam_scraper" else "expired"
+        for deal in Deal.query.filter(
+            Deal.source == source,
+            Deal.is_active.is_(True),
+            Deal.deal_end_date.is_not(None),
+            Deal.deal_end_date <= now,
+        ).all():
+            end_deal(deal, reason, now=now)
 
     def _save_price_snapshots(self):
         today = local_today()

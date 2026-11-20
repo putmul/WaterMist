@@ -30,3 +30,25 @@ def local_now():
 def local_today():
     """Return today's date in the configured application timezone."""
     return datetime.now(_timezone()).date()
+
+
+def parse_local_datetime(value):
+    """Parse an API timestamp and return a naive configured-local datetime."""
+    if isinstance(value, datetime):
+        parsed = value
+    elif value in (None, ""):
+        return None
+    else:
+        text = str(value).strip()
+        try:
+            if text.isdigit():
+                parsed = datetime.fromtimestamp(int(text), tz=_timezone())
+            else:
+                parsed = datetime.fromisoformat(text.replace("Z", "+00:00"))
+        except (TypeError, ValueError, OverflowError):
+            return None
+
+    if parsed.tzinfo is not None:
+        parsed = parsed.astimezone(_timezone())
+        return parsed.replace(tzinfo=None)
+    return parsed

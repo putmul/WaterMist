@@ -41,7 +41,12 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     TIMEZONE = os.getenv("TIMEZONE", "Asia/Jakarta")
-    RECENTLY_RELEASED_DAYS = 30
+    # The UI keeps a 30-day display window, while the daily release scraper
+    # only collects games released yesterday.
+    RECENTLY_RELEASED_DAYS = _as_int(os.getenv("RECENTLY_RELEASED_DAYS"), 30)
+    RECENTLY_RELEASED_SCRAPE_DAYS = _as_int(
+        os.getenv("RECENTLY_RELEASED_SCRAPE_DAYS"), 1
+    )
     SCHEDULER_ENABLED = _as_bool(os.getenv("SCHEDULER_ENABLED"), default=True)
     SCHEDULER_HOUR = _as_int(os.getenv("SCHEDULER_HOUR"), 2)
     SCHEDULER_MINUTE = _as_int(os.getenv("SCHEDULER_MINUTE"), 0)

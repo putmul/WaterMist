@@ -10,8 +10,10 @@ from flask import current_app
 from app.collectors.steam_release_bot import SteamReleaseBot
 from app.extensions import db
 from app.models.game import Game, GameGenre, GameProduct, GameTag, Genre, PriceHistory
+from app.models.deal import Deal
 from app.models.job_run import JobRun
 from app.models.store import Store
+from app.services.deal_lifecycle import apply_deal_record
 from app.utils.time import local_now, local_today
 
 log = logging.getLogger(__name__)
@@ -50,7 +52,11 @@ class GameService:
     job_name = "steam_releases"
 
     def sync_recently_released(self, days=None, limit=None, collector=None):
-        days = days or current_app.config["RECENTLY_RELEASED_DAYS"]
+        days = (
+            current_app.config["RECENTLY_RELEASED_SCRAPE_DAYS"]
+            if days is None
+            else days
+        )
         collector = collector or SteamReleaseBot()
         job_run = JobRun(job_name=self.job_name, status="running")
         db.session.add(job_run)
@@ -168,6 +174,36 @@ class GameService:
         product.game_id = game.id
         product.product_url = record.get("product_url")
         product.currency = record["currency"]
+
+        # A release discount must also enter the active deals lifecycle. Use
+        # the same Steam source as the regular Steam deals scraper so both
+        # collectors update one current deal row.
+        if (
+            record.get("discount_percent", 0) > 0
+            and record.get("regular_price") is not None
+            and record.get("sale_price") is not None
+            and record.get("product_url")
+        ):
+            deal = Deal.query.filter_by(
+                game_product_id=product.id, source="steam_scraper"
+            ).one_or_none()
+            if deal is None:
+                deal = Deal(game_product_id=product.id, source="steam_scraper")
+                db.session.add(deal)
+            apply_deal_record(
+                deal,
+                {
+                    "normal_price": record["regular_price"],
+                    "sale_price": record["sale_price"],
+                    "discount_percent": record["discount_percent"],
+                    "deal_url": record.get("product_url"),
+                    "external_deal_id": None,
+                    "deal_end_date": None,
+                    "is_on_sale": True,
+                    "source": "steam_scraper",
+                },
+            )
+            db.session.flush()
 
         for genre_name in record.get("genres", []):
             genre = Genre.query.filter_by(name=genre_name).one_or_none()

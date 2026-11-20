@@ -70,6 +70,7 @@ class SteamDealsCollector(SteamReleaseBot):
         max_pages = max_pages or Config.STEAM_DEALS_MAX_PAGES
         records = []
         seen = set()
+        self.failed_urls = []
         self.last_fetch_complete = False
 
         self.check_robots_txt()
@@ -119,6 +120,7 @@ class SteamDealsCollector(SteamReleaseBot):
             "sale_price": sale_price,
             "discount_percent": record.get("discount_percent", 0),
             "deal_end_date": record.get("deal_end_date"),
+            "is_on_sale": True,
             "region": Config.STEAM_REGION,
             "currency": Config.STEAM_CURRENCY,
             "source": "steam_scraper",

@@ -9,6 +9,7 @@ import requests
 from requests.exceptions import RequestException
 
 from config import Config
+from app.utils.time import parse_local_datetime
 
 from .base import BaseCollector
 
@@ -117,6 +118,11 @@ class CheapSharkClient(BaseCollector):
             savings = ((normal_price - sale_price) / normal_price * 100).quantize(
                 Decimal("0.01")
             )
+        is_on_sale = record.get("isOnSale", record.get("is_on_sale", True))
+        if isinstance(is_on_sale, str):
+            is_on_sale = is_on_sale.strip().lower() in {"1", "true", "yes", "on"}
+        else:
+            is_on_sale = bool(is_on_sale)
         return {
             "name": (record.get("title") or "").strip(),
             "steam_app_id": str(record.get("steamAppID"))
@@ -136,7 +142,15 @@ class CheapSharkClient(BaseCollector):
             "normal_price": normal_price,
             "sale_price": sale_price,
             "discount_percent": savings or Decimal("0"),
-            "deal_end_date": None,
+            "deal_end_date": parse_local_datetime(
+                record.get("dealEndDate") or record.get("deal_end_date")
+            ),
+            "first_seen_at": parse_local_datetime(
+                record.get("firstSeenAt")
+                or record.get("first_seen_at")
+                or record.get("firstSeen")
+            ),
+            "is_on_sale": is_on_sale,
             "region": Config.CHEAPSHARK_REGION,
             "currency": Config.CHEAPSHARK_CURRENCY,
             "source": "cheapshark",
