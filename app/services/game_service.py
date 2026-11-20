@@ -198,7 +198,7 @@ class GameService:
                     "discount_percent": record["discount_percent"],
                     "deal_url": record.get("product_url"),
                     "external_deal_id": None,
-                    "deal_end_date": None,
+                    "deal_end_date": record.get("deal_end_date"),
                     "is_on_sale": True,
                     "source": "steam_scraper",
                 },

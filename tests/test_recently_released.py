@@ -1,11 +1,12 @@
 import unittest
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from decimal import Decimal
 from unittest.mock import patch
 
 from app import create_app
 from app.collectors.steam_release_bot import parse_app_detail, parse_price
 from app.extensions import db
+from app.models.deal import Deal
 from app.models.game import Game, GameProduct, PriceHistory
 from app.services.game_service import GameService
 
@@ -94,6 +95,23 @@ class RecentlyReleasedTests(unittest.TestCase):
         self.assertEqual(Game.query.count(), 1)
         self.assertEqual(GameProduct.query.count(), 1)
         self.assertEqual(PriceHistory.query.count(), 1)
+
+    def test_release_discount_preserves_source_end_date(self):
+        end_date = datetime(2026, 11, 30, 23, 59, 59)
+        record = release_record()
+        record.update(
+            {
+                "discount_percent": 20,
+                "regular_price": Decimal("100000.00"),
+                "sale_price": Decimal("80000.00"),
+                "deal_end_date": end_date,
+            }
+        )
+
+        GameService().sync_recently_released(collector=FakeCollector([record]))
+
+        deal = Deal.query.one()
+        self.assertEqual(deal.deal_end_date, end_date)
 
     def test_failed_sync_keeps_existing_data(self):
         GameService().sync_recently_released(

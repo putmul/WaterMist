@@ -11,6 +11,7 @@ from .steam_release_bot import (
     _text,
     is_base_game,
     nsfw_reason,
+    parse_discount_end_date,
     parse_price,
 )
 
@@ -39,6 +40,12 @@ def parse_discount_page(html, page_url=""):
             continue
 
         image = row.select_one(".search_capsule img") or row.select_one("img")
+        expiration = _text(
+            row.select_one(
+                ".search_discount_expiration, .discount_expiration, "
+                ".game_purchase_discount_countdown"
+            )
+        )
         records.append(
             {
                 "app_id": app_id,
@@ -51,6 +58,7 @@ def parse_discount_page(html, page_url=""):
                     _text(row.select_one(".discount_final_price"))
                 ),
                 "discount_percent": discount,
+                "deal_end_date": parse_discount_end_date(expiration),
                 "product_url": href
                 or Config.STEAM_DETAIL_URL.format(app_id=app_id),
                 "cover_image": image.get("src", "") if image else "",
@@ -86,6 +94,21 @@ class SteamDealsCollector(SteamReleaseBot):
             for record in page_records:
                 if record["app_id"] in seen:
                     continue
+                if record.get("deal_end_date") is None:
+                    detail = self.scrape_app_detail(record)
+                    if detail:
+                        for field in (
+                            "description",
+                            "content_type",
+                            "genres",
+                            "tags",
+                            "mature_content",
+                        ):
+                            value = detail.get(field)
+                            if value:
+                                record[field] = value
+                        if detail.get("deal_end_date") is not None:
+                            record["deal_end_date"] = detail["deal_end_date"]
                 if not is_base_game(record) or nsfw_reason(record):
                     continue
                 seen.add(record["app_id"])

@@ -4,7 +4,7 @@ import logging
 import random
 import re
 import time
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, time as datetime_time, timedelta
 from decimal import Decimal, InvalidOperation
 from urllib import robotparser
 from urllib.parse import urljoin
@@ -23,12 +23,75 @@ log = logging.getLogger(__name__)
 
 def parse_steam_date(text):
     value = " ".join((text or "").replace("\xa0", " ").split())
-    for pattern in ("%d %b, %Y", "%b %d, %Y", "%d %b %Y", "%b %d %Y"):
+    for pattern in (
+        "%d %b, %Y",
+        "%b %d, %Y",
+        "%d %b %Y",
+        "%b %d %Y",
+        "%d %B, %Y",
+        "%B %d, %Y",
+        "%d %B %Y",
+        "%B %d %Y",
+    ):
         try:
             return datetime.strptime(value, pattern).date()
         except ValueError:
             continue
     return None
+
+
+def parse_discount_end_date(text, reference_date=None):
+    """Parse Steam's discount expiration text into a local naive datetime."""
+    value = " ".join((text or "").replace("\xa0", " ").split())
+    if not value:
+        return None
+
+    month_pattern = (
+        r"(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|"
+        r"Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:t(?:ember)?)?|"
+        r"Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)"
+    )
+    full_date_match = re.search(
+        rf"(?:\d{{1,2}}\s+{month_pattern},?\s+\d{{4}}|"
+        rf"{month_pattern}\s+\d{{1,2}},?\s+\d{{4}})",
+        value,
+        re.IGNORECASE,
+    )
+    date_text = full_date_match.group(0) if full_date_match else None
+    parsed = parse_steam_date(date_text) if date_text else None
+
+    if parsed is None:
+        short_date_match = re.search(
+            rf"(?:\d{{1,2}}\s+{month_pattern}|"
+            rf"{month_pattern}\s+\d{{1,2}})(?!\s*,?\s+\d{{4}})",
+            value,
+            re.IGNORECASE,
+        )
+        if not short_date_match:
+            return None
+        date_text = short_date_match.group(0).replace(",", "")
+        today = reference_date or local_today()
+        if isinstance(today, datetime):
+            today = today.date()
+        for year in (today.year, today.year + 1):
+            for pattern in ("%d %B %Y", "%d %b %Y", "%B %d %Y", "%b %d %Y"):
+                try:
+                    candidate = datetime.strptime(
+                        f"{date_text} {year}", pattern
+                    ).date()
+                except ValueError:
+                    continue
+                if candidate >= today or year == today.year + 1:
+                    parsed = candidate
+                    break
+            if parsed is not None:
+                break
+
+    if parsed is None:
+        return None
+    # Steam exposes the expiration as a date without a time. Treat the offer
+    # as valid through the end of that local calendar day.
+    return datetime.combine(parsed, datetime_time(23, 59, 59))
 
 
 def parse_price(text):
@@ -126,6 +189,11 @@ def parse_app_detail(html, app_id=None, url=""):
     ]
     original_text = _text(soup.select_one(".discount_original_price"))
     final_text = _text(soup.select_one(".discount_final_price"))
+    expiration_text = _text(
+        soup.select_one(
+            ".discount_expiration, .game_purchase_discount_countdown"
+        )
+    )
     if not original_text:
         original_text = _text(soup.select_one(".game_purchase_price"))
     if not final_text:
@@ -143,6 +211,7 @@ def parse_app_detail(html, app_id=None, url=""):
         "discount_percent": int(discount_match.group()) if discount_match else 0,
         "regular_price": parse_price(original_text),
         "sale_price": parse_price(final_text),
+        "deal_end_date": parse_discount_end_date(expiration_text),
         "product_url": url or Config.STEAM_DETAIL_URL.format(app_id=app_id),
         "cover_image": image.get("src", "") if image else "",
         "description": _text(
@@ -264,7 +333,11 @@ class SteamReleaseBot(BaseCollector):
 
     def scrape_app_detail(self, candidate):
         app_id = candidate["app_id"]
-        url = candidate.get("url") or Config.STEAM_DETAIL_URL.format(app_id=app_id)
+        url = (
+            candidate.get("url")
+            or candidate.get("product_url")
+            or Config.STEAM_DETAIL_URL.format(app_id=app_id)
+        )
         html = self._get_html(url)
         return parse_app_detail(html, app_id=app_id, url=url) if html else None
 
@@ -327,6 +400,7 @@ class SteamReleaseBot(BaseCollector):
             "regular_price": regular_price,
             "sale_price": sale_price,
             "discount_percent": record.get("discount_percent", 0),
+            "deal_end_date": record.get("deal_end_date"),
             "source": "steam_release_bot",
         }
 
