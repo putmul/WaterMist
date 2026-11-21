@@ -20,6 +20,11 @@ class Game(db.Model):
     cover_image = db.Column(db.Text)
     developer = db.Column(db.String(255))
     publisher = db.Column(db.String(255))
+    steam_rating_percent = db.Column(db.Integer)
+    steam_rating_count = db.Column(BIGINT)
+    steam_rating_text = db.Column(db.String(100))
+    review_source = db.Column(db.String(64))
+    review_updated_at = db.Column(db.DateTime)
     created_at = db.Column(db.DateTime, nullable=False, default=local_now)
     updated_at = db.Column(
         db.DateTime, nullable=False, default=local_now, onupdate=local_now

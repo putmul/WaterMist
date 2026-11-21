@@ -96,6 +96,16 @@ class RecentlyReleasedTests(unittest.TestCase):
         self.assertEqual(GameProduct.query.count(), 1)
         self.assertEqual(PriceHistory.query.count(), 1)
 
+    def test_new_release_sync_does_not_collect_review_metadata(self):
+        GameService().sync_recently_released(
+            collector=FakeCollector([release_record()])
+        )
+
+        game = Game.query.one()
+        self.assertIsNone(game.steam_rating_percent)
+        self.assertIsNone(game.steam_rating_count)
+        self.assertIsNone(game.review_source)
+
     def test_release_discount_preserves_source_end_date(self):
         end_date = datetime(2026, 11, 30, 23, 59, 59)
         record = release_record()

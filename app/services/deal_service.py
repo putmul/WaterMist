@@ -238,6 +238,7 @@ class DealService:
         game = self._find_game(record, store, cheapshark_client)
         if record.get("cover_image") and not game.cover_image:
             game.cover_image = record["cover_image"]
+        self._update_game_review_metadata(game, record)
 
         product = GameProduct.query.filter_by(
             store_id=store.id,
@@ -268,6 +269,26 @@ class DealService:
         apply_deal_record(deal, record, now=now)
         db.session.flush()
         return deal
+
+    @staticmethod
+    def _update_game_review_metadata(game, record):
+        """Update review metadata only when the deal source has valid values."""
+        review_metadata = {
+            "steam_rating_percent": record.get("steam_rating_percent"),
+            "steam_rating_count": record.get("steam_rating_count"),
+            "steam_rating_text": record.get("steam_rating_text"),
+        }
+        updated = False
+        for field, value in review_metadata.items():
+            if value is not None and value != "":
+                setattr(game, field, value)
+                updated = True
+        release_date = record.get("release_date")
+        if release_date is not None:
+            game.release_date = release_date
+        if updated:
+            game.review_source = record.get("review_source") or record.get("source")
+            game.review_updated_at = local_now()
 
     def _end_existing_record(self, record):
         store = self._get_or_create_store(record)

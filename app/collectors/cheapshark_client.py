@@ -2,6 +2,7 @@
 
 import logging
 import time
+from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
 from urllib.parse import quote, unquote
 
@@ -48,6 +49,43 @@ class CheapSharkClient(BaseCollector):
         try:
             return Decimal(str(value)).quantize(Decimal("0.01"))
         except (InvalidOperation, TypeError, ValueError):
+            return None
+
+    @staticmethod
+    def _non_negative_integer(value):
+        if value in (None, "") or isinstance(value, bool):
+            return None
+        try:
+            parsed = int(str(value).strip())
+        except (TypeError, ValueError):
+            return None
+        return parsed if parsed >= 0 else None
+
+    @classmethod
+    def _rating_percent(cls, value):
+        parsed = cls._non_negative_integer(value)
+        return min(parsed, 100) if parsed is not None else None
+
+    @staticmethod
+    def _release_date(value):
+        if isinstance(value, datetime):
+            return value.date()
+        if isinstance(value, date):
+            return value
+        if value in (None, ""):
+            return None
+
+        text = str(value).strip()
+        for format_value in ("%Y-%m-%d", "%Y/%m/%d", "%b %d, %Y", "%B %d, %Y"):
+            try:
+                return datetime.strptime(text, format_value).date()
+            except ValueError:
+                continue
+
+        try:
+            timestamp = int(text)
+            return datetime.fromtimestamp(timestamp).date()
+        except (TypeError, ValueError, OverflowError, OSError):
             return None
 
     def fetch_stores(self):
@@ -139,6 +177,18 @@ class CheapSharkClient(BaseCollector):
             "product_url": deal_url,
             "deal_url": deal_url,
             "cover_image": record.get("thumb"),
+            "steam_rating_percent": self._rating_percent(
+                record.get("steamRatingPercent", record.get("steam_rating_percent"))
+            ),
+            "steam_rating_count": self._non_negative_integer(
+                record.get("steamRatingCount", record.get("steam_rating_count"))
+            ),
+            "steam_rating_text": (
+                record.get("steamRatingText") or record.get("steam_rating_text")
+            ),
+            "release_date": self._release_date(
+                record.get("releaseDate", record.get("release_date"))
+            ),
             "normal_price": normal_price,
             "sale_price": sale_price,
             "discount_percent": savings or Decimal("0"),
