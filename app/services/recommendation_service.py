@@ -17,6 +17,7 @@ from app.recommendation.preference_builder import (
 )
 from app.recommendation.ranking import rank_games
 from app.recommendation.scoring import ALGORITHM_VERSION
+from app.services.preference_service import PreferenceProfileService
 from app.utils.time import local_now
 
 
@@ -133,6 +134,8 @@ class RecommendationService:
             ).one_or_none()
             if favorite is None:
                 db.session.add(UserFavorite(user_id=user.id, game_id=game_id))
+        db.session.flush()
+        PreferenceProfileService().rebuild_behavioral_preferences(user.id)
         db.session.commit()
         return interaction
 

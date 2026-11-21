@@ -7,7 +7,9 @@ import requests
 from flask import current_app
 
 from app.extensions import db
-from app.models import Game, User, UserOwnedGame, UserSteamProfile
+from app.models import Game, User, UserOwnedGame, UserPreference, UserSteamProfile
+from app.services.game_enrichment_service import GameEnrichmentService
+from app.services.preference_service import PreferenceProfileService
 from app.utils.time import local_now
 
 
@@ -24,8 +26,9 @@ class SteamProfilePrivateError(SteamServiceError):
 
 
 class SteamService:
-    def __init__(self, http_client=None):
+    def __init__(self, http_client=None, enrichment_service=None):
         self.http = http_client or requests.Session()
+        self.enrichment_service = enrichment_service or GameEnrichmentService()
 
     def link_profile(self, user, profile_input):
         steam_id = self.resolve_steam_id(profile_input)
@@ -41,7 +44,8 @@ class SteamService:
 
         try:
             records = self.fetch_owned_games(steam_id)
-            self._save_owned_games(user.id, records)
+            app_ids = self._save_owned_games(user.id, records)
+            enrichment = self.enrichment_service.enrich_app_ids(app_ids)
         except SteamProfilePrivateError as exc:
             profile.visibility_status = "private"
             profile.sync_status = "failed"
@@ -61,6 +65,9 @@ class SteamService:
         profile.last_sync_error = None
         user.preference_mode = "steam"
         user.onboarding_status = "steam_connected"
+        PreferenceProfileService().rebuild_steam_preferences(user.id)
+        db.session.commit()
+        profile.last_sync_error = self._enrichment_message(enrichment)
         db.session.commit()
         return profile
 
@@ -99,7 +106,7 @@ class SteamService:
                 "key": current_app.config["STEAM_API_KEY"],
                 "steamid": steam_id,
                 "format": "json",
-                "include_appinfo": 0,
+                "include_appinfo": 1,
                 "include_played_free_games": 1,
             },
         )
@@ -128,12 +135,16 @@ class SteamService:
             profile.last_sync_error = str(exc)[:1000]
             db.session.commit()
             raise SteamServiceError("Library Steam tidak dapat disinkronkan saat ini.") from exc
-        self._save_owned_games(user.id, records)
+        app_ids = self._save_owned_games(user.id, records)
+        enrichment = self.enrichment_service.enrich_app_ids(app_ids)
         profile.visibility_status = "public"
         profile.sync_status = "success"
         profile.last_synced_at = local_now()
         profile.last_sync_error = None
         user.preference_mode = "steam"
+        PreferenceProfileService().rebuild_steam_preferences(user.id)
+        db.session.commit()
+        profile.last_sync_error = self._enrichment_message(enrichment)
         db.session.commit()
         return profile
 
@@ -154,6 +165,7 @@ class SteamService:
 
     def disconnect(self, user):
         UserOwnedGame.query.filter_by(user_id=user.id).delete()
+        UserPreference.query.filter_by(user_id=user.id, source="steam").delete()
         profile = UserSteamProfile.query.filter_by(user_id=user.id).one_or_none()
         if profile is not None:
             db.session.delete(profile)
@@ -163,11 +175,20 @@ class SteamService:
 
     def _save_owned_games(self, user_id, records):
         UserOwnedGame.query.filter_by(user_id=user_id).delete()
+        app_ids = []
         for record in records:
             app_id = str(record.get("appid", ""))
             if not app_id.isdigit():
                 continue
+            app_ids.append(app_id)
             game = Game.query.filter_by(steam_app_id=app_id).one_or_none()
+            if game is None:
+                game = Game(
+                    name=(record.get("name") or f"Steam App {app_id}").strip(),
+                    steam_app_id=app_id,
+                )
+                db.session.add(game)
+                db.session.flush()
             try:
                 playtime = max(0, int(record.get("playtime_forever", 0) or 0))
                 recent_playtime = max(0, int(record.get("playtime_2weeks", 0) or 0))
@@ -185,6 +206,17 @@ class SteamService:
                     synced_at=local_now(),
                 )
             )
+        db.session.flush()
+        return app_ids
+
+    @staticmethod
+    def _enrichment_message(stats):
+        if not stats or not stats.get("failed"):
+            return None
+        return (
+            f"Enrichment metadata sebagian gagal: {stats['failed']} dari "
+            f"{stats['requested']} game."
+        )
 
     def _get_json(self, path, params):
         url = current_app.config["STEAM_API_BASE_URL"].rstrip("/") + path

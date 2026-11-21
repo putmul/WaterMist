@@ -3,8 +3,9 @@
 ## Status
 
 Implementasi MVP berjalan. Scoring dasar, content-based ranking, akun/quiz,
-Steam library, dan recommendation batch sudah tersedia. Refresh segera setelah
-perubahan profil menjadi aturan implementasi aktif.
+Steam library, metadata enrichment, preference materialization, dan
+recommendation batch sudah tersedia. Refresh segera setelah perubahan profil
+menjadi aturan implementasi aktif.
 
 ## Tujuan
 
@@ -123,6 +124,22 @@ Route connect Steam harus menganggap linking dan recommendation sebagai dua
 operasi terpisah: kegagalan recommendation tidak boleh membatalkan koneksi
 Steam yang sudah sukses.
 
+### 6.1. Materialisasi preference profile
+
+`PreferenceProfileService` menjadi satu-satunya proses yang mengubah data
+mentah menjadi sinyal recommendation persisten.
+
+1. Ambil `user_owned_games` yang sudah termapping ke `games`.
+2. Hitung bobot playtime dengan normalisasi logaritmik.
+3. Agregasikan genre, tag, dan developer dari game tersebut.
+4. Hapus sinyal lama `source='steam'` milik user.
+5. Upsert sinyal baru ke `user_preferences` beserta `confidence` dan versi profil.
+6. Recommendation builder hanya membaca source aktif dari `user_preferences`.
+
+Mode `quiz` membaca `source='quiz'`; mode `steam` membaca `source='steam'`.
+Sumber quiz tidak dihapus saat Steam terhubung karena dibutuhkan sebagai
+fallback.
+
 ### 7. Pengujian
 
 Tambahkan test untuk:
@@ -138,6 +155,8 @@ Tambahkan test untuk:
 - recommendation langsung dibuat setelah quiz selesai;
 - recommendation langsung dibuat setelah Steam linking berhasil;
 - kegagalan generate recommendation tidak menghapus koneksi Steam.
+- preferensi Steam tersimpan di database setelah linking dan sync.
+- builder recommendation menggunakan preferensi database, bukan playtime runtime.
 
 ## Batasan fase ini
 

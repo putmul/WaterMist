@@ -23,21 +23,7 @@
 </form>
 
 {% if user %}
-<section class="steam-panel">
-    <h2>Personalisasi Steam</h2>
-    {% if user.steam_profile %}
-    <p>Status: {{ user.steam_profile.sync_status }}{% if user.steam_profile.last_synced_at %}, terakhir disinkronkan {{ user.steam_profile.last_synced_at }}{% endif %}</p>
-    <form method="post" action="{{ url_for('auth.disconnect_steam') }}">
-        <button type="submit">Putuskan Steam dan hapus library</button>
-    </form>
-    {% else %}
-    <p>Hubungkan Steam untuk menggunakan library dan playtime sebagai preferensi.</p>
-    <form method="post" action="{{ url_for('auth.connect_steam') }}">
-        <input name="steam_profile" placeholder="SteamID64 atau Profile URL" required>
-        <button type="submit">Hubungkan Steam</button>
-    </form>
-    {% endif %}
-</section>
+<p><a href="{{ url_for('profile.profile') }}">Kelola profil dan koneksi Steam</a></p>
 {% endif %}
 
 {% macro cards(items) %}

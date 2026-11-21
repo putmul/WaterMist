@@ -3,7 +3,15 @@ from unittest.mock import patch
 
 from app import create_app
 from app.extensions import db
-from app.models import Game, GameGenre, Genre, User, UserInteraction, UserOwnedGame
+from app.models import (
+    Game,
+    GameGenre,
+    Genre,
+    User,
+    UserInteraction,
+    UserOwnedGame,
+    UserPreference,
+)
 from app.services.recommendation_service import RecommendationService
 from app.services.steam_service import SteamProfilePrivateError, SteamService
 
@@ -25,6 +33,18 @@ class _SteamHTTP:
 
     def get(self, url, params, timeout):
         return _Response(self.payload)
+
+
+class _GameEnrichment:
+    def enrich_app_ids(self, app_ids):
+        return {
+            "requested": len(app_ids),
+            "created_games": 0,
+            "mapped_games": len(app_ids),
+            "metadata_completed": 0,
+            "metadata_skipped": len(app_ids),
+            "failed": 0,
+        }
 
 
 class PersonalizationTests(unittest.TestCase):
@@ -110,13 +130,19 @@ class PersonalizationTests(unittest.TestCase):
                         ]
                     }
                 }
-            )
+            ),
+            enrichment_service=_GameEnrichment(),
         )
         profile = service.link_profile(user, "76561198000000000")
         self.assertEqual(profile.sync_status, "success")
         self.assertEqual(user.preference_mode, "steam")
         self.assertEqual(len(user.owned_games), 1)
         self.assertEqual(user.owned_games[0].game_id, self.game.id)
+        steam_preferences = UserPreference.query.filter_by(
+            user_id=user.id, source="steam"
+        ).all()
+        self.assertTrue(steam_preferences)
+        self.assertEqual(steam_preferences[0].feature_key, "rpg")
 
     def test_private_steam_library_falls_back_without_deleting_account(self):
         user = User(email="private@example.com")
@@ -161,6 +187,16 @@ class PersonalizationTests(unittest.TestCase):
         self.assertEqual(response.status_code, 302)
         steam_class.return_value.link_profile.assert_called_once()
         generate.assert_called_once()
+
+    def test_profile_page_is_the_steam_connection_surface(self):
+        client = self.app.test_client()
+        client.post(
+            "/auth/register",
+            data={"email": "profile@example.com", "password": "password123"},
+        )
+        response = client.get("/profile")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b"Hubungkan/sinkronkan Steam", response.data)
 
 
 if __name__ == "__main__":

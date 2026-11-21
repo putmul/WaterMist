@@ -1,7 +1,7 @@
 # PRD Modul 05 — Recommendation Engine
 
 **Proyek:** WaterMist | **Versi:** 1.0 | **Tanggal:** 18 November 2026 | **Status:** Draft (belum dikembangkan)
-**Dependensi:** Modul 01 (genre/tag), 03 (metadata game), 04 (profil pengguna) | **Dikonsumsi oleh:** Modul 06 | **Status implementasi:** scoring dan content-based ranking tersedia
+**Dependensi:** Modul 01 (genre/tag), 03 (metadata game), 04 (profil pengguna) | **Dikonsumsi oleh:** Modul 06 | **Status implementasi:** scoring, content-based ranking, dan database-driven Steam profile tersedia
 
 ## 1. Tujuan
 
@@ -31,7 +31,10 @@ Sistem menganalisis karakteristik game yang disukai pengguna, lalu mencari game 
 
 ### 3.1. User Preference Profile
 
-Bobot preferensi per genre/tag dihitung dari playtime, game favorit, dan interaksi.
+Bobot preferensi per genre/tag dihitung dari data yang sudah tersimpan di
+database. Proses profile builder mematerialisasi sinyal ke `user_preferences`
+sebelum ranking dijalankan; ranking tidak menghitung playtime langsung dari
+`user_owned_games`.
 
 | Genre | Preference Score (ilustrasi) |
 |-------|-----------------------------:|
@@ -48,6 +51,11 @@ Nilai di atas hanya ilustrasi. Disimpan di `user_preferences`. Usulan bobot siny
 | Favorit manual | Kuat |
 | Interaksi positif (favorite, click deal) | Sedang |
 | `dismiss_recommendation` | Negatif |
+
+Sumber aktif dipilih dari `users.preference_mode`: `quiz` memakai baris
+`source='quiz'`, sedangkan `steam` memakai baris `source='steam'`. Sinyal
+favorite dan interaction yang sudah dimaterialisasi dapat ditambahkan sebagai
+sinyal pendukung pada kedua mode.
 
 ### 3.2. Similarity
 
@@ -93,6 +101,7 @@ Implementasi MVP memakai filter tambahan untuk Hidden Gems: `popularity_score <=
 | RE-22 | **Cold start:** jika profil pengguna kosong atau data terlalu sedikit, minta pengguna memilih favorit manual, dan sementara tampilkan game populer secara umum. |
 | RE-23 | Menyimpan model/vektor (Joblib) agar tidak dihitung ulang tiap request. |
 | RE-24 | Rekomendasi diperbarui setelah library/favorit/quiz pengguna berubah (trigger), langsung setelah linking Steam, dan lewat job harian. |
+| RE-25 | Setelah Steam sync, genre/tag/developer dihitung dan disimpan ke `user_preferences` dengan `source='steam'`. |
 
 ## 6. Data Popularitas
 
@@ -172,6 +181,7 @@ yang digunakan dapat diaudit.
 - [x] Menyimpan komponen skor dan alasan rekomendasi
 - [x] Mengecualikan game yang dimiliki atau di-dismiss
 - [x] Refresh batch langsung setelah quiz selesai atau Steam berhasil ditautkan
+- [x] Materialisasi preference Steam dari library/playtime setelah metadata enrichment
 
 ## 12. Acceptance Criteria
 
@@ -181,3 +191,5 @@ yang digunakan dapat diaudit.
 4. Pengguna tanpa data mendapat fallback yang wajar, bukan halaman kosong.
 5. Rekomendasi dibaca dari hasil tersimpan sehingga halaman tetap cepat.
 6. Setelah linking Steam berhasil, batch terbaru menggunakan `preference_mode=steam` dan library/playtime yang baru disinkronkan.
+7. Recommendation menggunakan baris preferensi aktif dari database, bukan menghitung ulang playtime langsung pada request.
+8. User Steam dengan metadata game yang tersedia memiliki baris `user_preferences` dengan `source='steam'`.

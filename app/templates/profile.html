@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Profile - WaterMist{% endblock %}
+{% block content %}
+<h1>Profile</h1>
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% for category, message in messages %}<p class="flash flash-{{ category }}">{{ message }}</p>{% endfor %}
+{% endwith %}
+
+<p>Email: {{ user.email }}</p>
+<p>Mode personalisasi aktif: <strong>{{ user.preference_mode }}</strong></p>
+
+<section>
+    <h2>Koneksi Steam</h2>
+    {% if user.steam_profile %}
+    <p>Status: {{ user.steam_profile.sync_status }} ({{ user.steam_profile.visibility_status }})</p>
+    {% if user.steam_profile.last_synced_at %}<p>Sinkronisasi terakhir: {{ user.steam_profile.last_synced_at }}</p>{% endif %}
+    <form method="post" action="{{ url_for('profile.disconnect_steam') }}">
+        <button type="submit">Putuskan Steam dan hapus library</button>
+    </form>
+    {% endif %}
+    <form method="post" action="{{ url_for('profile.connect_steam') }}">
+        <label>SteamID64 atau Profile URL
+            <input name="steam_profile" placeholder="7656119... atau https://steamcommunity.com/id/..." required>
+        </label>
+        <button type="submit">Hubungkan/sinkronkan Steam</button>
+    </form>
+    {% if user.steam_profile %}
+    <p>Library: {{ owned_total }} game; ter-map: {{ mapped_total }}; metadata lengkap: {{ metadata_ready }}.</p>
+    <p>Preference Steam tersimpan: {{ steam_preference_total }}.</p>
+    {% endif %}
+</section>
+
+<section>
+    <h2>Preferensi tersimpan</h2>
+    {% for preference in preferences %}
+    <p>{{ preference.feature_type }}: {{ preference.feature_key }} — {{ '%.2f'|format(preference.preference_score) }} ({{ preference.source }})</p>
+    {% else %}
+    <p>Belum ada preferensi tersimpan.</p>
+    {% endfor %}
+</section>
+{% endblock %}

@@ -14,6 +14,7 @@
         <a href="{{ url_for('recommendations.recommendations') }}">Recommendations</a>
         {% if session.get('user_id') %}
         <a href="{{ url_for('onboarding.quiz') }}">Preferensi</a>
+        <a href="{{ url_for('profile.profile') }}">Profile</a>
         <form method="post" action="{{ url_for('auth.logout') }}" style="display:inline">
             <button type="submit">Logout</button>
         </form>
