@@ -21,9 +21,9 @@ WaterMist adalah platform agregasi informasi dan rekomendasi game PC: memantau d
 | 01 | `01-foundation-data-platform.md` | Foundation & Data Platform (DB inti, normalisasi, scheduler, logging) | — | Belum dikembangkan |
 | 02 | `02-game-deals.md` | Game Deals | Steam scraper + CheapShark API | Belum dikembangkan |
 | 03 | `03-recently-released.md` | Recently Released | Steam bot | Bot sudah tersedia |
-| 04 | `04-steam-integration.md` | Steam Integration & User Data | Steam Web API | Belum dikembangkan |
-| 05 | `05-recommendation-engine.md` | Recommendation Engine | Data internal | Belum dikembangkan |
-| 06 | `06-dashboard-ui.md` | Dashboard, Halaman & UI | Data internal | Belum dikembangkan |
+| 04 | `04-steam-integration.md` | Steam Integration & User Data | Steam Web API | Fondasi akun/quiz/linking tersedia |
+| 05 | `05-recommendation-engine.md` | Recommendation Engine | Data internal | Scoring dan ranking MVP tersedia |
+| 06 | `06-dashboard-ui.md` | Dashboard, Halaman & UI | Data internal | Halaman rekomendasi MVP tersedia |
 
 ## 3. Pembagian Sumber Data
 
@@ -66,7 +66,7 @@ WaterMist adalah platform agregasi informasi dan rekomendasi game PC: memantau d
 
 Hal-hal berikut tidak terdefinisi jelas di PRD awal dan perlu diputuskan. Detailnya ada di modul terkait.
 
-1. **Tabel `users` belum didefinisikan.** Banyak tabel punya `user_id` sebagai FK, tapi PRD awal tidak menjelaskan akun/autentikasi. Lihat modul 04.
+1. **Identitas pengguna:** keputusan MVP sekarang adalah akun WaterMist untuk quiz/Steam dan konteks request untuk anonymous search. Lihat modul 04.
 2. **Tumpang tindih Steam scraper dan CheapShark.** CheapShark juga melacak Steam sebagai salah satu toko, sehingga deal Steam bisa masuk dua kali. Perlu aturan prioritas sumber. Lihat modul 02.
 3. **Frekuensi harian vs durasi diskon.** Dengan 1x sehari, diskon flash/singkat bisa terlewat dan riwayat harga hanya per hari. Ini disepakati sebagai batasan MVP. Lihat modul 01 dan 02.
 4. **Data popularitas belum punya sumber pasti** untuk Hidden Gems. Lihat modul 05.

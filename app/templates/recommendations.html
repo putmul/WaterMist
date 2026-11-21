@@ -1,3 +1,74 @@
 {% extends "base.html" %}
 {% block title %}Recommendations - WaterMist{% endblock %}
-{% block content %}<h1>Recommendations</h1><p>Modul rekomendasi belum diimplementasikan.</p>{% endblock %}
+{% block content %}
+<h1>Recommendations</h1>
+<p>
+    {% if result.mode == 'steam' %}
+    Rekomendasi berdasarkan library dan playtime Steam kamu.
+    {% elif result.mode == 'quiz' %}
+    Rekomendasi berdasarkan preferensi quiz kamu.
+    {% else %}
+    Pilih genre atau tag untuk personalisasi pencarian tanpa login.
+    {% endif %}
+</p>
+
+<form method="get" class="preference-form">
+    <label for="genres">Genre</label>
+    <input id="genres" name="genres" placeholder="RPG, Action, Strategy"
+           value="{{ result.genres|join(', ') }}">
+    <label for="tags">Tag</label>
+    <input id="tags" name="tags" placeholder="co-op, exploration, roguelike"
+           value="{{ result.tags|join(', ') }}">
+    <button type="submit">Cari rekomendasi</button>
+</form>
+
+{% if user %}
+<section class="steam-panel">
+    <h2>Personalisasi Steam</h2>
+    {% if user.steam_profile %}
+    <p>Status: {{ user.steam_profile.sync_status }}{% if user.steam_profile.last_synced_at %}, terakhir disinkronkan {{ user.steam_profile.last_synced_at }}{% endif %}</p>
+    <form method="post" action="{{ url_for('auth.disconnect_steam') }}">
+        <button type="submit">Putuskan Steam dan hapus library</button>
+    </form>
+    {% else %}
+    <p>Hubungkan Steam untuk menggunakan library dan playtime sebagai preferensi.</p>
+    <form method="post" action="{{ url_for('auth.connect_steam') }}">
+        <input name="steam_profile" placeholder="SteamID64 atau Profile URL" required>
+        <button type="submit">Hubungkan Steam</button>
+    </form>
+    {% endif %}
+</section>
+{% endif %}
+
+{% macro cards(items) %}
+<div class="recommendation-grid">
+{% for item in items %}
+    {% set game = item.game if item.game is defined else item.game %}
+    <article class="recommendation-card">
+        {% if game.cover_image %}<img src="{{ game.cover_image }}" alt="{{ game.name }}">{% endif %}
+        <h3>{{ game.name }}</h3>
+        <p>{{ item.reason_text or 'Dipilih berdasarkan kecocokan preferensi.' }}</p>
+        <small>Fit: {{ '%.2f'|format(item.fit_score) }} · Score: {{ '%.2f'|format(item.recommendation_score if item.recommendation_score is defined else item.popular_score) }}</small>
+        {% if user %}
+        <form method="post" action="{{ url_for('recommendations.record_interaction') }}">
+            <input type="hidden" name="game_id" value="{{ game.id }}">
+            <button name="interaction_type" value="favorite" type="submit">Favorit</button>
+            <button name="interaction_type" value="dismiss_recommendation" type="submit">Sembunyikan</button>
+        </form>
+        {% endif %}
+    </article>
+{% else %}
+    <p>Belum ada rekomendasi yang memenuhi kriteria.</p>
+{% endfor %}
+</div>
+{% endmacro %}
+
+<section>
+    <h2>Popular Picks</h2>
+    {{ cards(result.popular) }}
+</section>
+<section>
+    <h2>Hidden Gems</h2>
+    {{ cards(result.hidden_gem) }}
+</section>
+{% endblock %}

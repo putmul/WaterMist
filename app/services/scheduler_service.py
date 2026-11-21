@@ -5,6 +5,8 @@ import logging
 
 from app.services.game_service import GameService
 from app.services.deal_service import DealService
+from app.services.recommendation_service import RecommendationService
+from app.services.steam_service import SteamService
 
 log = logging.getLogger(__name__)
 _scheduler = None
@@ -29,6 +31,14 @@ def start_scheduler(app):
                     release_result.get("status"),
                     deal_result.get("status"),
                 )
+            steam_result = SteamService().sync_all_users()
+            refreshed = RecommendationService().refresh_all_users()
+            log.info(
+                "Steam library sync selesai: synced=%s failed=%s",
+                steam_result["synced"],
+                steam_result["failed"],
+            )
+            log.info("Recommendation refresh selesai: %s user", refreshed)
 
     _scheduler.add_job(
         run_daily_sync,

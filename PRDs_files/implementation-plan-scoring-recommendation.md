@@ -2,8 +2,9 @@
 
 ## Status
 
-Ditunda. Dokumen ini menjadi rencana fase berikutnya dan tidak termasuk dalam
-implementasi metadata review/diskon saat ini.
+Implementasi MVP berjalan. Scoring dasar, content-based ranking, akun/quiz,
+Steam library, dan recommendation batch sudah tersedia. Refresh segera setelah
+perubahan profil menjadi aturan implementasi aktif.
 
 ## Tujuan
 
@@ -106,7 +107,23 @@ Setelah scoring dan recommendation selesai diuji:
 - ubah `app/routes/recommendations.py` agar membaca hasil tersimpan;
 - ubah template rekomendasi untuk menampilkan skor dan metadata review.
 
-### 6. Pengujian
+### 6. Refresh recommendation setelah perubahan profil
+
+Perubahan sumber preferensi tidak boleh menunggu scheduler harian jika data
+baru sudah tersedia dari request pengguna.
+
+| Trigger | Aksi | Fallback jika gagal |
+|---------|------|---------------------|
+| Quiz selesai | Simpan jawaban dan preference signals, lalu `generate_for_user()` | Quiz tetap tersimpan; batch dicoba pada scheduler berikutnya |
+| Steam linking berhasil | Simpan profile dan library/playtime, ubah mode ke `steam`, lalu `generate_for_user()` | Steam tetap tertaut; tampilkan warning dan retry berikutnya |
+| Steam sync harian berhasil | Hitung ulang batch user terkait | Gunakan batch terakhir yang sukses |
+| Favorite/dismiss | Simpan interaksi; refresh dapat dilakukan pada request berikutnya atau batch harian | Jangan menghapus batch terakhir |
+
+Route connect Steam harus menganggap linking dan recommendation sebagai dua
+operasi terpisah: kegagalan recommendation tidak boleh membatalkan koneksi
+Steam yang sudah sukses.
+
+### 7. Pengujian
 
 Tambahkan test untuk:
 
@@ -118,6 +135,9 @@ Tambahkan test untuk:
 - konsistensi hasil `FinalScore`;
 - ranking menggunakan seluruh dataset;
 - cold start dan filter game yang dimiliki/dismissed.
+- recommendation langsung dibuat setelah quiz selesai;
+- recommendation langsung dibuat setelah Steam linking berhasil;
+- kegagalan generate recommendation tidak menghapus koneksi Steam.
 
 ## Batasan fase ini
 

@@ -1,7 +1,7 @@
 # PRD Modul 05 — Recommendation Engine
 
 **Proyek:** WaterMist | **Versi:** 1.0 | **Tanggal:** 18 November 2026 | **Status:** Draft (belum dikembangkan)
-**Dependensi:** Modul 01 (genre/tag), 03 (metadata game), 04 (profil pengguna) | **Dikonsumsi oleh:** Modul 06
+**Dependensi:** Modul 01 (genre/tag), 03 (metadata game), 04 (profil pengguna) | **Dikonsumsi oleh:** Modul 06 | **Status implementasi:** scoring dan content-based ranking tersedia
 
 ## 1. Tujuan
 
@@ -21,6 +21,7 @@ Game niche tidak berarti kualitas rendah; istilah ini hanya merujuk popularitas/
 | Game yang dimiliki dan playtime | `user_owned_games` (Modul 04) |
 | Game favorit manual | `user_favorites` (Modul 04) |
 | Interaksi pengguna | `user_interactions` (Modul 04) |
+| Konteks anonymous search | Pilihan genre/tag pada request saat ini |
 | Genre, tag, deskripsi, developer | `games`, `game_genres`, `game_tags` (Modul 01/03) |
 | Data popularitas | Lihat bagian 6 |
 
@@ -56,16 +57,19 @@ Nilai di atas hanya ilustrasi. Disimpan di `user_preferences`. Usulan bobot siny
 ### 3.3. Popular Picks
 
 ```text
-PopularScore = (w1 × Similarity) + (w2 × Popularity)
+PopularScore = 0.60 × Fit + 0.25 × Quality + 0.15 × Popularity
 ```
 
 ### 3.4. Hidden Gems
 
 ```text
-NicheScore = (w1 × Similarity) + (w2 × Novelty)
+HiddenGemScore = 0.70 × Fit + 0.20 × Quality + 0.10 × Novelty
 ```
 
 Hidden Gems memprioritaskan: similarity tinggi, popularitas relatif rendah, dan metadata cukup untuk dinilai. Bobot (w1, w2) dan ambang batas **harus diuji dengan data nyata**; simpan di konfigurasi, bukan hardcode.
+
+Implementasi MVP memakai filter tambahan untuk Hidden Gems: `popularity_score <= 0.40`,
+`fit_score >= 0.05`, metadata rating tersedia, dan `quality_score >= 0.55`.
 
 ## 4. Aturan Rekomendasi
 
@@ -88,7 +92,7 @@ Hidden Gems memprioritaskan: similarity tinggi, popularitas relatif rendah, dan 
 | RE-21 | Menghitung rekomendasi secara batch (setelah sinkron harian) dan menyimpannya ke `recommendations`; halaman hanya membaca hasil tersimpan. |
 | RE-22 | **Cold start:** jika profil pengguna kosong atau data terlalu sedikit, minta pengguna memilih favorit manual, dan sementara tampilkan game populer secara umum. |
 | RE-23 | Menyimpan model/vektor (Joblib) agar tidak dihitung ulang tiap request. |
-| RE-24 | Rekomendasi diperbarui setelah library/favorit pengguna berubah (trigger) dan lewat job harian. |
+| RE-24 | Rekomendasi diperbarui setelah library/favorit/quiz pengguna berubah (trigger), langsung setelah linking Steam, dan lewat job harian. |
 
 ## 6. Data Popularitas
 
@@ -108,8 +112,11 @@ Jika data popularitas tidak tersedia untuk sebuah game, gunakan indikator altern
 |-------|------|-----------|
 | id | BIGINT | PK |
 | user_id | BIGINT | FK |
-| genre_id | BIGINT | FK |
+| feature_type | VARCHAR | `genre`, `tag`, atau `developer` |
+| feature_key | VARCHAR | Nama/ID fitur |
 | preference_score | FLOAT | Bobot preferensi |
+| source | VARCHAR | `quiz`, `steam`, `favorite`, `interaction` |
+| confidence | FLOAT | Tingkat keyakinan |
 
 > Pertimbangkan menambah dimensi tag (bukan hanya genre), karena Soulslike atau Roguelike lebih sering berupa tag.
 
@@ -124,6 +131,11 @@ Jika data popularitas tidak tersedia untuk sebuah game, gunakan indikator altern
 | recommendation_score | FLOAT | Skor akhir |
 | generated_at | TIMESTAMP | |
 | *reason* | TEXT | **Usulan:** alasan rekomendasi (FR-18) |
+
+Kolom implementasi tambahan: `run_id`, `rank`, `fit_score`, `quality_score`,
+`popularity_score`, `novelty_score`, dan `algorithm_version`. Hasil batch
+memiliki tabel `recommendation_runs` agar versi algoritma dan `max_reviews`
+yang digunakan dapat diaudit.
 
 ## 8. Struktur Kode
 
@@ -156,6 +168,10 @@ Jika data popularitas tidak tersedia untuk sebuah game, gunakan indikator altern
 - [ ] Menyediakan alasan rekomendasi
 - [ ] Batch job rekomendasi dan penanganan cold start
 - [ ] Menguji kualitas rekomendasi
+- [x] Ranking membedakan konteks anonymous search dan profil login
+- [x] Menyimpan komponen skor dan alasan rekomendasi
+- [x] Mengecualikan game yang dimiliki atau di-dismiss
+- [x] Refresh batch langsung setelah quiz selesai atau Steam berhasil ditautkan
 
 ## 12. Acceptance Criteria
 
@@ -164,3 +180,4 @@ Jika data popularitas tidak tersedia untuk sebuah game, gunakan indikator altern
 3. Setiap rekomendasi punya alasan singkat.
 4. Pengguna tanpa data mendapat fallback yang wajar, bukan halaman kosong.
 5. Rekomendasi dibaca dari hasil tersimpan sehingga halaman tetap cepat.
+6. Setelah linking Steam berhasil, batch terbaru menggunakan `preference_mode=steam` dan library/playtime yang baru disinkronkan.

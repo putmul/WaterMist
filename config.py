@@ -36,6 +36,9 @@ def _database_uri():
 
 class Config:
     SECRET_KEY = os.getenv("SECRET_KEY", "development-only-change-me")
+    SESSION_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_SAMESITE = "Lax"
+    SESSION_COOKIE_SECURE = _as_bool(os.getenv("SESSION_COOKIE_SECURE"), default=False)
     LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
     SQLALCHEMY_DATABASE_URI = _database_uri()
     SQLALCHEMY_TRACK_MODIFICATIONS = False
@@ -73,6 +76,10 @@ class Config:
     STEAM_MAX_PAGES = _as_int(os.getenv("STEAM_MAX_PAGES"), 100)
     STEAM_REGION = os.getenv("STEAM_REGION", "ID")
     STEAM_CURRENCY = os.getenv("STEAM_CURRENCY", "IDR")
+    STEAM_API_KEY = os.getenv("STEAM_API_KEY", "")
+    STEAM_API_BASE_URL = os.getenv(
+        "STEAM_API_BASE_URL", "https://api.steampowered.com"
+    )
     STEAM_DEALS_SEARCH_URL = os.getenv(
         "STEAM_DEALS_SEARCH_URL",
         "https://store.steampowered.com/search/?specials=1&category1=998&page={page}",

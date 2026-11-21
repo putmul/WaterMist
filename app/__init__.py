@@ -25,12 +25,15 @@ def create_app(config_object=None, start_scheduler=False):
 
     from . import models  # noqa: F401
     from .routes.deals import deals_bp
+    from .routes.auth import auth_bp, onboarding_bp
     from .routes.main import main_bp
     from .routes.recommendations import recommendations_bp
     from .routes.releases import releases_bp
 
     app.register_blueprint(main_bp)
     app.register_blueprint(deals_bp)
+    app.register_blueprint(auth_bp)
+    app.register_blueprint(onboarding_bp)
     app.register_blueprint(releases_bp)
     app.register_blueprint(recommendations_bp)
 

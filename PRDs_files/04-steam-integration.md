@@ -1,7 +1,7 @@
 # PRD Modul 04 — Steam Integration & User Data
 
 **Proyek:** WaterMist | **Versi:** 1.0 | **Tanggal:** 18 November 2026 | **Status:** Draft (belum dikembangkan)
-**Dependensi:** Modul 01, 03 (data `games`) | **Dikonsumsi oleh:** Modul 05, 06
+**Dependensi:** Modul 01, 03 (data `games`) | **Dikonsumsi oleh:** Modul 05, 06 | **Status implementasi:** fondasi akun, quiz, dan linking Steam tersedia
 
 ## 1. Tujuan
 
@@ -22,26 +22,32 @@ Catatan:
 - **Jangan pernah meminta password Steam.** Cukup Steam ID/Profile URL.
 - API key disimpan di environment variable, tidak di frontend atau repository.
 
-## 3. Keputusan Terbuka: Identitas Pengguna
+## 3. Keputusan Identitas dan Mode Personalisasi
 
-PRD awal memakai `user_id` di banyak tabel, tetapi **tidak mendefinisikan tabel `users` maupun autentikasi**. Perlu keputusan sebelum implementasi:
+WaterMist mendukung akses anonymous dan akun WaterMist. Steam digunakan sebagai sumber preferensi, bukan sebagai tempat pengguna memasukkan password.
 
 | Opsi | Deskripsi | Konsekuensi |
 |------|-----------|-------------|
-| A. Akun WaterMist (email/username + password) | Registrasi dan login sendiri | Perlu hashing password, session, reset password |
-| B. Sesi anonim | `user_id` dibuat otomatis per browser (cookie), Steam ID tersimpan di sesi | Paling sederhana untuk MVP; data hilang jika cookie dihapus |
-| C. Steam OpenID login | Login lewat Steam tanpa password | Identitas jelas dan tanpa password; kompleksitas integrasi lebih tinggi |
+| Mode | Login | Sumber preferensi | Penyimpanan |
+| Anonymous search | Tidak | Genre/tag/filter dari pencarian | Request/session browser; tidak dibuatkan akun permanen |
+| Quiz profile | Ya | Jawaban quiz, favorit, interaksi | `users` dan tabel preferensi |
+| Steam profile | Ya | Library dan playtime Steam | `users`, `user_steam_profiles`, `user_owned_games` |
 
-**Rekomendasi MVP:** opsi B atau A. Skema di bawah mengasumsikan ada tabel `users` minimal (`id`, `created_at`, plus kolom auth sesuai opsi). Jika memakai akun, terapkan autentikasi dan otorisasi sesuai NFR keamanan.
+**Keputusan MVP:** gunakan akun WaterMist untuk data yang perlu disimpan dan gunakan konteks pencarian untuk anonymous. Pengguna dapat berpindah dari quiz ke Steam tanpa membuat akun baru. Jika Steam privat, mode pengguna tetap/fallback ke quiz.
 
 ## 4. Skema Database
 
-### `users` (usulan, mengikuti opsi di atas)
+### `users`
 | Field | Tipe | Keterangan |
 |-------|------|-----------|
 | id | BIGINT | PK |
-| created_at | TIMESTAMP | |
-| *(kolom auth)* | — | Sesuai opsi yang dipilih |
+| email | VARCHAR | Unique, login lokal |
+| password_hash | VARCHAR | Hash password, bukan password asli |
+| auth_provider | VARCHAR | `local` pada MVP |
+| status | VARCHAR | `active`, `suspended`, `deleted` |
+| preference_mode | VARCHAR | `quiz` atau `steam` |
+| onboarding_status | VARCHAR | Status onboarding |
+| created_at / updated_at | TIMESTAMP | Audit |
 
 ### `user_steam_profiles`
 | Field | Tipe | Keterangan |
@@ -51,6 +57,8 @@ PRD awal memakai `user_id` di banyak tabel, tetapi **tidak mendefinisikan tabel 
 | steam_id | VARCHAR | SteamID64 |
 | profile_url | TEXT | URL profil |
 | last_synced_at | TIMESTAMP | Sinkronisasi terakhir |
+| visibility_status | VARCHAR | `public`, `private`, `unknown` |
+| sync_status | VARCHAR | `pending`, `success`, `failed` |
 
 ### `user_owned_games`
 | Field | Tipe | Keterangan |
@@ -91,12 +99,13 @@ PRD awal memakai `user_id` di banyak tabel, tetapi **tidak mendefinisikan tabel 
 | ST-23 | Mencatat interaksi pengguna (view, favorite, click deal, dismiss) ke `user_interactions`. |
 | ST-24 | Pengguna dapat memutuskan koneksi Steam dan menghapus data library/profil miliknya. |
 | ST-25 | Pengambilan data Steam berjalan asinkron (background job) agar tidak menghambat request. |
+| ST-26 | Setelah linking dan sinkronisasi awal berhasil, recommendation user langsung dihitung ulang sebelum redirect ke halaman recommendation. |
 
 ## 6. Alur Pengguna
 
 ```text
 Input Steam ID/URL → validasi → resolve ke SteamID64 → panggil Steam Web API
-   ├─ publik  → simpan library + playtime → mapping ke games → siap dipakai rekomendasi
+   ├─ publik  → simpan library + playtime → mapping ke games → hitung ulang recommendation langsung
    └─ privat  → pesan jelas → input game favorit manual
 ```
 
@@ -128,6 +137,10 @@ Input Steam ID/URL → validasi → resolve ke SteamID64 → panggil Steam Web A
 - [ ] Mencatat `user_interactions`
 - [ ] Menambahkan sinkronisasi harian ke scheduler
 - [ ] Fitur putuskan koneksi dan hapus data
+- [x] Menyediakan akun WaterMist dan session login dasar
+- [x] Menyediakan quiz preferensi sebagai fallback tanpa Steam
+- [x] Menyimpan mode preferensi dan status sinkronisasi Steam
+- [x] Menghitung ulang recommendation segera setelah linking Steam berhasil
 
 ## 10. Acceptance Criteria
 
@@ -136,3 +149,4 @@ Input Steam ID/URL → validasi → resolve ke SteamID64 → panggil Steam Web A
 3. Pengguna dapat memilih dan menyimpan game favorit manual.
 4. Playtime tersimpan per game dan siap dipakai Modul 05.
 5. Password Steam tidak pernah diminta atau disimpan; API key tidak terekspos.
+6. Setelah Steam publik berhasil ditautkan, halaman recommendation menampilkan hasil dari profil Steam terbaru, bukan batch quiz lama.

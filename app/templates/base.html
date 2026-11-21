@@ -12,6 +12,15 @@
         <a href="{{ url_for('releases.releases') }}">Recently Released</a>
         <a href="{{ url_for('deals.deals') }}">Deals</a>
         <a href="{{ url_for('recommendations.recommendations') }}">Recommendations</a>
+        {% if session.get('user_id') %}
+        <a href="{{ url_for('onboarding.quiz') }}">Preferensi</a>
+        <form method="post" action="{{ url_for('auth.logout') }}" style="display:inline">
+            <button type="submit">Logout</button>
+        </form>
+        {% else %}
+        <a href="{{ url_for('auth.login') }}">Login</a>
+        <a href="{{ url_for('auth.register') }}">Daftar</a>
+        {% endif %}
     </nav>
     <main>{% block content %}{% endblock %}</main>
 </body>

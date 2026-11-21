@@ -1,7 +1,7 @@
 # PRD Modul 06 — Dashboard, Halaman & UI
 
 **Proyek:** WaterMist | **Versi:** 1.0 | **Tanggal:** 18 November 2026 | **Status:** Draft (belum dikembangkan)
-**Dependensi:** Modul 01–05 (halaman bisa dikerjakan bertahap sesuai modul yang selesai)
+**Dependensi:** Modul 01–05 (halaman bisa dikerjakan bertahap sesuai modul yang selesai) | **Status implementasi:** halaman rekomendasi MVP tersedia
 
 ## 1. Tujuan
 
@@ -19,7 +19,7 @@ Bagian berurutan:
 3. **Hidden Gems For You** (Modul 05)
 4. **Recently Released** (Modul 03)
 
-Jika pengguna belum menghubungkan Steam: bagian rekomendasi menampilkan ajakan menghubungkan Steam ID atau memilih favorit, dan/atau game populer umum.
+Jika pengguna anonymous, bagian rekomendasi menggunakan pilihan genre/tag dari pencarian. Jika pengguna login tetapi belum menghubungkan Steam, tampilkan quiz preferensi. Jika Steam privat atau gagal disinkronkan, gunakan profil quiz sebagai fallback.
 
 ### 2.2. Deals Page
 - Search game
@@ -79,7 +79,8 @@ Nama, cover, deskripsi, developer, publisher, genre, tanggal rilis, daftar toko 
 - [ ] Halaman Deals + filter dan sorting
 - [ ] Halaman Recently Released + filter periode
 - [ ] Halaman Game Detail (+ riwayat harga dan perbandingan toko)
-- [ ] Halaman Recommendations (+ koneksi Steam, favorit manual)
+- [x] Halaman Recommendations (+ koneksi Steam, favorit manual)
+- [x] Alur login, register, dan quiz preferensi
 - [ ] Dashboard utama (Best Deals, Popular Picks, Hidden Gems, Recently Released)
 - [ ] Indikator "terakhir diperbarui"
 - [ ] Perbaikan UI/UX, uji performa, perbaikan inkonsistensi data
