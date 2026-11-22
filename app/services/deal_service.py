@@ -432,6 +432,14 @@ class DealService:
             stmt = stmt.order_by(Game.name.asc(), Deal.sale_price.asc())
         elif sort == "store":
             stmt = stmt.order_by(Store.name.asc(), Game.name.asc())
+        elif sort == "popularity":
+            # Review count is the popularity signal currently available on Game.
+            # Put games without review metadata after games with a known count.
+            stmt = stmt.order_by(
+                Game.steam_rating_count.is_(None),
+                Game.steam_rating_count.desc(),
+                Game.name.asc(),
+            )
         else:
             stmt = stmt.order_by(Deal.discount_percent.desc(), Game.name.asc())
         return stmt
@@ -474,6 +482,8 @@ class DealService:
                 secondary = (-float(deal.discount_percent or 0), name)
             elif sort == "store":
                 secondary = (deal.game_product.store.name.casefold(), name)
+            elif sort == "popularity":
+                secondary = (-int(deal.game_product.game.steam_rating_count or 0), name)
             else:
                 secondary = (name, float(deal.sale_price or 0))
             return (relevance, *secondary)

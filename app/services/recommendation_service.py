@@ -27,7 +27,7 @@ log = logging.getLogger(__name__)
 class RecommendationService:
     """Build, persist, and read explainable recommendation results."""
 
-    def recommend(self, user=None, genres=None, tags=None, limit=12):
+    def recommend(self, user=None, genres=None, tags=None, limit=12, candidates=None):
         if user is not None:
             profile = (
                 build_profile_from_choices(genres=genres, tags=tags)
@@ -48,7 +48,7 @@ class RecommendationService:
             dismissed_ids = []
 
         ranked = rank_games(
-            Game.query.all(),
+            list(candidates) if candidates is not None else Game.query.all(),
             profile,
             owned_game_ids=owned_ids,
             dismissed_game_ids=dismissed_ids,
@@ -57,6 +57,7 @@ class RecommendationService:
         ranked["mode"] = mode
         ranked["genres"] = list(genres or ())
         ranked["tags"] = list(tags or ())
+        ranked["has_profile"] = bool(profile)
         return ranked
 
     def generate_for_user(self, user, limit=12):

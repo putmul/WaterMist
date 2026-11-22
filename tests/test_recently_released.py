@@ -7,6 +7,7 @@ from app import create_app
 from app.collectors.steam_release_bot import parse_app_detail, parse_price
 from app.extensions import db
 from app.models.deal import Deal
+from app.models import GameGenre, Genre, User, UserPreference
 from app.models.game import Game, GameProduct, PriceHistory
 from app.services.game_service import GameService
 
@@ -165,6 +166,53 @@ class RecentlyReleasedTests(unittest.TestCase):
         self.assertNotIn(b"Today Game", response.data)
         self.assertNotIn(b"Old Game", response.data)
         self.assertNotIn(b"Future Game", response.data)
+
+    def test_release_page_can_rank_games_by_user_preferences(self):
+        user = User(email="release-preference@example.com")
+        user.set_password("password123")
+        genre = Genre(name="RPG")
+        preferred = Game(
+            name="Preferred RPG",
+            steam_app_id="11",
+            release_date=date.today() - timedelta(days=1),
+        )
+        other = Game(
+            name="Other Action",
+            steam_app_id="12",
+            release_date=date.today() - timedelta(days=1),
+        )
+        db.session.add_all([user, genre, preferred, other])
+        db.session.flush()
+        db.session.add(GameGenre(game_id=preferred.id, genre_id=genre.id))
+        db.session.add(
+            UserPreference(
+                user_id=user.id,
+                feature_type="genre",
+                feature_key="RPG",
+                preference_score=1.0,
+                source="quiz",
+                confidence=1.0,
+            )
+        )
+        db.session.commit()
+
+        client = self.app.test_client()
+        with client.session_transaction() as session:
+            session["user_id"] = user.id
+        response = client.get("/releases", query_string={"mode": "preference"})
+
+        self.assertEqual(response.status_code, 200)
+        body = response.get_data(as_text=True)
+        self.assertLess(body.index("Preferred RPG"), body.index("Other Action"))
+        self.assertIn("Cocok dengan preferensimu", body)
+
+    def test_release_preference_mode_requires_login(self):
+        response = self.app.test_client().get(
+            "/releases", query_string={"mode": "preference"}
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b"Login untuk melihat rekomendasi", response.data)
 
     @patch("app.routes.main.GameService.sync_recently_released")
     def test_dashboard_can_trigger_release_sync(self, sync_recently_released):

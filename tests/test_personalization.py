@@ -88,6 +88,17 @@ class PersonalizationTests(unittest.TestCase):
         self.assertEqual(result["popular"][0]["game"].name, "RPG Test")
         self.assertGreater(result["popular"][0]["fit_score"], 0)
 
+    def test_recommendation_can_be_limited_to_release_candidates(self):
+        outside_window = Game(name="Outside Candidate")
+        db.session.add(outside_window)
+        db.session.commit()
+
+        result = RecommendationService().recommend(
+            genres=["RPG"], candidates=[self.game]
+        )
+
+        self.assertEqual([item["game"].id for item in result["popular"]], [self.game.id])
+
     def test_user_recommendations_exclude_owned_and_dismissed_games(self):
         user = User(email="user@example.com")
         user.set_password("password123")

@@ -7,16 +7,29 @@
     <label>Game
         <input type="search" name="q" value="{{ q }}" placeholder="Cari game">
     </label>
+    <label>Filter
+        <select name="mode">
+            <option value="latest" {% if mode == 'latest' %}selected{% endif %}>Terbaru</option>
+            <option value="preference" {% if mode == 'preference' %}selected{% endif %}>Berdasarkan preferensimu</option>
+        </select>
+    </label>
     <button type="submit">Cari</button>
-    {% if q %}<a class="reset-link" href="{{ url_for('releases.releases') }}">Reset</a>{% endif %}
+    {% if q or mode != 'latest' %}<a class="reset-link" href="{{ url_for('releases.releases') }}">Reset</a>{% endif %}
 </form>
+{% if preference_message %}
+<div class="empty-state"><p>{{ preference_message }}</p></div>
+{% endif %}
 {% if games %}
 <section class="game-grid">
-{% for game in games %}
+{% for item in games %}
+{% set game = item.game if personalized else item %}
 <article class="game-card">
     {% if game.cover_image %}<img src="{{ game.cover_image }}" alt="{{ game.name }}">{% endif %}
     <h2>{{ game.name }}</h2>
     <p>{{ game.release_date or "Tanggal tidak tersedia" }}</p>
+    {% if personalized %}
+    <p class="muted">Cocok dengan preferensimu · Fit: {{ '%.0f'|format(item.fit_score * 100) }}%</p>
+    {% endif %}
     {% if game.steam_app_id %}
     {% set steam_product = game.products|selectattr("store.name", "equalto", "Steam")|list|first %}
     <a href="{{ steam_product.product_url if steam_product and steam_product.product_url else 'https://store.steampowered.com/app/' ~ game.steam_app_id ~ '/' }}" target="_blank" rel="noopener">Steam Store</a>
@@ -25,9 +38,9 @@
 {% endfor %}
 </section>
 <nav class="pagination" aria-label="Pagination">
-    {% if pagination.has_prev %}<a href="{{ url_for('releases.releases', q=q, per_page=per_page, page=pagination.prev_num) }}">Sebelumnya</a>{% endif %}
+    {% if pagination.has_prev %}<a href="{{ url_for('releases.releases', q=q, mode=mode, per_page=per_page, page=pagination.prev_num) }}">Sebelumnya</a>{% endif %}
     <span>Halaman {{ pagination.page }} dari {{ pagination.pages or 1 }}</span>
-    {% if pagination.has_next %}<a href="{{ url_for('releases.releases', q=q, per_page=per_page, page=pagination.next_num) }}">Berikutnya</a>{% endif %}
+    {% if pagination.has_next %}<a href="{{ url_for('releases.releases', q=q, mode=mode, per_page=per_page, page=pagination.next_num) }}">Berikutnya</a>{% endif %}
 </nav>
 {% else %}
 <div class="empty-state"><p>Belum ada data game terbaru yang sesuai.</p></div>

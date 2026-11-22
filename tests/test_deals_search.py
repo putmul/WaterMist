@@ -98,6 +98,21 @@ class DealsSearchTests(unittest.TestCase):
         self.assertIn(safe.id, result_ids)
         self.assertNotIn(nsfw.id, result_ids)
 
+    def test_popularity_sort_orders_by_review_count(self):
+        less_popular = self._deal("Less Popular Game")
+        most_popular = self._deal("Most Popular Game")
+        less_popular.steam_rating_count = 100
+        most_popular.steam_rating_count = 10000
+        db.session.commit()
+
+        response = self.app.test_client().get(
+            "/deals", query_string={"sort": "popularity"}
+        )
+
+        self.assertEqual(response.status_code, 200)
+        body = response.get_data(as_text=True)
+        self.assertLess(body.index("Most Popular Game"), body.index("Less Popular Game"))
+
 
 if __name__ == "__main__":
     unittest.main()
