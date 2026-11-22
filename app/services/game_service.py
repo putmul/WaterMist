@@ -133,6 +133,10 @@ class GameService:
             db.session.add(game)
             db.session.flush()
 
+        # The record can add or change genres/tags without changing a scalar
+        # Game column, so invalidate semantic metadata explicitly.
+        game.semantic_embedding_updated_at = None
+
         for field in (
             "name",
             "description",

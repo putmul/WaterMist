@@ -25,6 +25,9 @@ class Game(db.Model):
     steam_rating_text = db.Column(db.String(100))
     review_source = db.Column(db.String(64))
     review_updated_at = db.Column(db.DateTime)
+    semantic_embedding = db.Column(db.Text)
+    semantic_embedding_model = db.Column(db.String(255))
+    semantic_embedding_updated_at = db.Column(db.DateTime)
     created_at = db.Column(db.DateTime, nullable=False, default=local_now)
     updated_at = db.Column(
         db.DateTime, nullable=False, default=local_now, onupdate=local_now

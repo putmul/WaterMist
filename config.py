@@ -109,3 +109,18 @@ class Config:
         for value in os.getenv("NSFW_BLACKLIST", "").split(",")
         if value.strip()
     )
+    SEMANTIC_SEARCH_ENABLED = _as_bool(
+        os.getenv("SEMANTIC_SEARCH_ENABLED"), default=True
+    )
+    SEMANTIC_EMBEDDING_MODEL = os.getenv(
+        "SEMANTIC_EMBEDDING_MODEL",
+        "paraphrase-multilingual-MiniLM-L12-v2",
+    )
+    SEMANTIC_SEARCH_MIN_SCORE = float(
+        os.getenv("SEMANTIC_SEARCH_MIN_SCORE", "0.35")
+    )
+    SEMANTIC_SEARCH_TOP_K = _as_int(os.getenv("SEMANTIC_SEARCH_TOP_K"), 100)
+    SEMANTIC_EMBEDDING_BATCH_SIZE = _as_int(
+        os.getenv("SEMANTIC_EMBEDDING_BATCH_SIZE"), 32
+    )
+    SEMANTIC_DEFAULT_CURRENCY = os.getenv("SEMANTIC_DEFAULT_CURRENCY", STEAM_CURRENCY)

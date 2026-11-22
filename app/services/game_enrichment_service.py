@@ -77,6 +77,9 @@ class GameEnrichmentService:
 
     @staticmethod
     def _apply_record(game, record):
+        # Genre/tag changes do not necessarily update the parent Game row, so
+        # explicitly invalidate its embedding for the next batch rebuild.
+        game.semantic_embedding_updated_at = None
         for field in (
             "name",
             "description",

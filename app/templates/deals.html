@@ -4,13 +4,14 @@
 <div class="page-heading">
     <div>
         <h1>Game Deals</h1>
+        {% if semantic_mode and q %}<p class="muted">Pencarian berdasarkan makna untuk: “{{ q }}”</p>{% endif %}
         {% if updated_at %}<p class="muted">Terakhir diperbarui: {{ updated_at }}</p>{% endif %}
     </div>
 </div>
 
 <form class="deal-filters" method="get">
     <label>Game
-        <input type="search" name="q" value="{{ q }}" placeholder="Cari game">
+        <input type="search" name="q" value="{{ q }}" placeholder="Cari game atau jelaskan game yang kamu cari">
     </label>
     <label>Toko
         <select name="store">
@@ -28,6 +29,7 @@
     </label>
     <label>Urutkan
         <select name="sort">
+            <option value="relevance" {% if sort == 'relevance' %}selected{% endif %}>Relevansi</option>
             <option value="discount" {% if sort == 'discount' %}selected{% endif %}>Diskon terbesar</option>
             <option value="price" {% if sort == 'price' %}selected{% endif %}>Harga terendah</option>
             <option value="name" {% if sort == 'name' %}selected{% endif %}>Nama</option>
@@ -48,7 +50,10 @@
         <p class="deal-store">{{ product.store.name }} · {{ product.currency }} ({{ product.region }})</p>
         <p><s>{{ product.currency }} {{ '%.2f'|format(deal.normal_price) }}</s>
             <strong>{{ product.currency }} {{ '%.2f'|format(deal.sale_price) }}</strong></p>
-        <p class="discount">-{{ '%.0f'|format(deal.discount_percent) }}%</p>
+        <p class="discount">Skor diskon: -{{ '%.0f'|format(deal.discount_percent) }}%</p>
+        {% if semantic_mode and deal.semantic_score is not none %}
+        <p class="muted">Relevansi: {{ '%.0f'|format(deal.semantic_score * 100) }}%</p>
+        {% endif %}
         <a class="deal-button" href="{{ deal.deal_url }}" target="_blank" rel="noopener">Lihat deal</a>
     </article>
 {% endfor %}

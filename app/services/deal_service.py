@@ -400,6 +400,8 @@ class DealService:
             stmt = stmt.where(Deal.sale_price >= filters["min_price"])
         if filters.get("max_price") is not None:
             stmt = stmt.where(Deal.sale_price <= filters["max_price"])
+        if filters.get("currency"):
+            stmt = stmt.where(GameProduct.currency == filters["currency"])
 
         sort = filters.get("sort", "discount")
         if sort == "price":

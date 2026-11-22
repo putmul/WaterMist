@@ -7,6 +7,7 @@ from app.services.game_service import GameService
 from app.services.deal_service import DealService
 from app.services.recommendation_service import RecommendationService
 from app.services.steam_service import SteamService
+from app.services.semantic_search_service import SemanticSearchService
 
 log = logging.getLogger(__name__)
 _scheduler = None
@@ -31,6 +32,8 @@ def start_scheduler(app):
                     release_result.get("status"),
                     deal_result.get("status"),
                 )
+            embedding_result = SemanticSearchService().rebuild_stale_embeddings()
+            log.info("Semantic embedding sync selesai: %s", embedding_result)
             steam_result = SteamService().sync_all_users()
             refreshed = RecommendationService().refresh_all_users()
             log.info(
