@@ -1,6 +1,7 @@
 """Application configuration loaded from environment variables."""
 
 import os
+from decimal import Decimal, InvalidOperation
 from urllib.parse import quote_plus
 
 from dotenv import load_dotenv
@@ -19,6 +20,26 @@ def _as_int(value, default):
         return int(value) if value is not None else default
     except (TypeError, ValueError):
         return default
+
+
+def _as_exchange_rates(value, default=None):
+    """Parse rates expressed as ``CURRENCY=base-currency value`` pairs."""
+    rates = dict(default or {})
+    if not value:
+        return rates
+    for item in value.split(","):
+        if "=" not in item:
+            continue
+        currency, raw_rate = (part.strip().upper() for part in item.split("=", 1))
+        if not currency:
+            continue
+        try:
+            rate = Decimal(raw_rate)
+        except (InvalidOperation, TypeError, ValueError):
+            continue
+        if rate > 0:
+            rates[currency] = rate
+    return rates
 
 
 def _database_uri():
@@ -94,6 +115,13 @@ class Config:
     CHEAPSHARK_REGION = os.getenv("CHEAPSHARK_REGION", "US")
     CHEAPSHARK_CURRENCY = os.getenv("CHEAPSHARK_CURRENCY", "USD")
     DEALS_ENABLED = _as_bool(os.getenv("DEALS_ENABLED"), default=True)
+    PRICE_COMPARISON_CURRENCY = os.getenv("PRICE_COMPARISON_CURRENCY", "IDR").upper()
+    # Rates are expressed as base-currency units per one unit of the source
+    # currency, e.g. USD=16000 means 1 USD = 16,000 IDR.
+    PRICE_EXCHANGE_RATES = _as_exchange_rates(
+        os.getenv("PRICE_EXCHANGE_RATES"),
+        {"IDR": Decimal("1"), "USD": Decimal("16000")},
+    )
     NON_BASE_KEYWORDS = (
         "soundtrack",
         "dlc",
@@ -104,9 +132,20 @@ class Config:
         "software",
         "video",
     )
+    DEFAULT_NSFW_BLACKLIST = (
+        "adult only",
+        "sexual content",
+        "nudity",
+        "hentai",
+        "nsfw",
+        "pornography",
+        "explicit sexual content",
+    )
     NSFW_BLACKLIST = tuple(
         value.strip().lower()
-        for value in os.getenv("NSFW_BLACKLIST", "").split(",")
+        for value in os.getenv(
+            "NSFW_BLACKLIST", ",".join(DEFAULT_NSFW_BLACKLIST)
+        ).split(",")
         if value.strip()
     )
     SEMANTIC_SEARCH_ENABLED = _as_bool(
@@ -120,6 +159,9 @@ class Config:
         os.getenv("SEMANTIC_SEARCH_MIN_SCORE", "0.35")
     )
     SEMANTIC_SEARCH_TOP_K = _as_int(os.getenv("SEMANTIC_SEARCH_TOP_K"), 100)
+    SEMANTIC_SEARCH_DISPLAY_LIMIT = min(
+        max(_as_int(os.getenv("SEMANTIC_SEARCH_DISPLAY_LIMIT"), 12), 10), 20
+    )
     SEMANTIC_EMBEDDING_BATCH_SIZE = _as_int(
         os.getenv("SEMANTIC_EMBEDDING_BATCH_SIZE"), 32
     )

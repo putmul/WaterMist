@@ -38,6 +38,21 @@ class SemanticSearchTests(unittest.TestCase):
             vectors.append([1.0, 0.0] if any(word in lowered for word in ("horror", "horor")) else [0.0, 1.0])
         return vectors
 
+    @staticmethod
+    def _ranking_encoder(texts):
+        vectors = []
+        for text in texts:
+            lowered = text.lower()
+            if "game horror" in lowered:
+                vectors.append([1.0, 0.0])
+            elif "high" in lowered:
+                vectors.append([1.0, 0.0])
+            elif "medium" in lowered:
+                vectors.append([0.8, 0.6])
+            else:
+                vectors.append([0.0, 1.0])
+        return vectors
+
     def _deal(self, name, tags, price):
         game = Game(name=name)
         db.session.add(game)
@@ -91,6 +106,38 @@ class SemanticSearchTests(unittest.TestCase):
         )
 
         self.assertEqual([deal.game_product.game.id for deal in results], [cheap.id])
+
+    def test_semantic_results_always_sort_by_score(self):
+        high, _ = self._deal("High Game", [], 200000)
+        medium, _ = self._deal("Medium Game", [], 50000)
+        low, _ = self._deal("Low Game", [], 10000)
+        db.session.commit()
+
+        results = SemanticSearchService(encoder=self._ranking_encoder).search(
+            SearchIntent("game horror"), sort="price"
+        )
+
+        self.assertEqual(
+            [deal.game_product.game.id for deal in results],
+            [high.id, medium.id],
+        )
+        self.assertNotIn(low.id, [deal.game_product.game.id for deal in results])
+        self.assertGreater(results[0].semantic_score, results[1].semantic_score)
+
+    def test_nsfw_tagged_games_are_excluded_from_semantic_search(self):
+        safe, _ = self._deal("Safe Horror", ["Horror"], 80000)
+        blocked, _ = self._deal(
+            "Adult Horror", ["Horror", "Sexual Content"], 70000
+        )
+        db.session.commit()
+
+        results = SemanticSearchService(encoder=self._encoder).search(
+            SearchIntent("game horror")
+        )
+
+        result_ids = [deal.game_product.game.id for deal in results]
+        self.assertIn(safe.id, result_ids)
+        self.assertNotIn(blocked.id, result_ids)
 
 
 if __name__ == "__main__":

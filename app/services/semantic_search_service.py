@@ -124,6 +124,19 @@ class SemanticSearchService:
             return 0.0
         return sum(a * b for a, b in zip(left, right)) / (left_norm * right_norm)
 
+    @staticmethod
+    def _sort_by_relevance(deals):
+        """Sort semantic results by similarity before applying tie-breakers."""
+        return sorted(
+            deals,
+            key=lambda deal: (
+                -(deal.semantic_score or 0),
+                -float(deal.discount_percent or 0),
+                float(deal.sale_price or 0),
+                deal.game_product.game.name.casefold(),
+            ),
+        )
+
     def rebuild_stale_embeddings(self, limit=None):
         if not current_app.config.get("SEMANTIC_SEARCH_ENABLED", True):
             return {"updated": 0, "failed": 0, "available": False}
@@ -152,7 +165,14 @@ class SemanticSearchService:
         db.session.commit()
         return {"updated": len(games), "failed": 0, "available": True}
 
-    def search(self, intent: SearchIntent, store=None, sort=None):
+    def search(
+        self,
+        intent: SearchIntent,
+        store=None,
+        sort=None,
+        filters=None,
+        exclude_game_ids=None,
+    ):
         """Return ranked active deals, or None when semantic encoding is unavailable."""
         if not current_app.config.get("SEMANTIC_SEARCH_ENABLED", True):
             return None
@@ -160,7 +180,7 @@ class SemanticSearchService:
         if requested_sort == "relevance" and intent.sort != "relevance":
             requested_sort = intent.sort
         ranking_intent = replace(intent, sort=requested_sort)
-        filters = {
+        search_filters = {
             "q": "",
             "store": store,
             "min_discount": intent.min_discount,
@@ -170,12 +190,32 @@ class SemanticSearchService:
             "currency": intent.currency,
             "sort": "discount",
         }
-        deals = db.session.scalars(DealService().list_active_deals(filters)).unique().all()
+        for field in (
+            "store",
+            "min_discount",
+            "max_discount",
+            "min_price",
+            "max_price",
+            "currency",
+        ):
+            if filters and filters.get(field) is not None:
+                search_filters[field] = filters[field]
+
+        deals = db.session.scalars(
+            DealService().list_active_deals(search_filters)
+        ).unique().all()
         if intent.currency:
             deals = [
                 deal
                 for deal in deals
                 if deal.game_product.currency.upper() == intent.currency.upper()
+            ]
+        exclude_game_ids = set(exclude_game_ids or ())
+        if exclude_game_ids:
+            deals = [
+                deal
+                for deal in deals
+                if deal.game_product.game.id not in exclude_game_ids
             ]
 
         if not intent.semantic_text:
@@ -222,46 +262,7 @@ class SemanticSearchService:
                 continue
             deal.semantic_score = score
             ranked.append(deal)
-        if requested_sort == "price":
-            ranked.sort(
-                key=lambda deal: (
-                    float(deal.sale_price or 0),
-                    -(deal.semantic_score or 0),
-                    deal.game_product.game.name.casefold(),
-                )
-            )
-        elif requested_sort == "discount":
-            ranked.sort(
-                key=lambda deal: (
-                    -float(deal.discount_percent or 0),
-                    -(deal.semantic_score or 0),
-                    deal.game_product.game.name.casefold(),
-                )
-            )
-        elif requested_sort == "name":
-            ranked.sort(
-                key=lambda deal: (
-                    deal.game_product.game.name.casefold(),
-                    -(deal.semantic_score or 0),
-                )
-            )
-        elif requested_sort == "store":
-            ranked.sort(
-                key=lambda deal: (
-                    deal.game_product.store.name.casefold(),
-                    -(deal.semantic_score or 0),
-                    deal.game_product.game.name.casefold(),
-                )
-            )
-        else:
-            ranked.sort(
-                key=lambda deal: (
-                    -(deal.semantic_score or 0),
-                    -float(deal.discount_percent or 0),
-                    float(deal.sale_price or 0),
-                    deal.game_product.game.name.casefold(),
-                )
-            )
+        ranked = self._sort_by_relevance(ranked)
         return ranked[: current_app.config["SEMANTIC_SEARCH_TOP_K"]]
 
     @staticmethod

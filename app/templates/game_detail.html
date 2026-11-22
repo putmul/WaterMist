@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}{{ game.name }} - WaterMist{% endblock %}
+{% block content %}
+<p><a href="{{ url_for('deals.deals') }}">&larr; Kembali ke Deals</a></p>
+
+<section class="game-detail-header">
+    {% if game.cover_image %}<img src="{{ game.cover_image }}" alt="{{ game.name }}">{% endif %}
+    <div>
+        <h1>{{ game.name }}</h1>
+        <dl class="game-metadata">
+            <dt>Developer</dt><dd>{{ game.developer or 'Informasi belum tersedia' }}</dd>
+            <dt>Publisher</dt><dd>{{ game.publisher or 'Informasi belum tersedia' }}</dd>
+        </dl>
+        {% if game.tags %}
+        <div class="game-tags">
+            {% for tag in game.tags %}<span>{{ tag.tag }}</span>{% endfor %}
+        </div>
+        {% endif %}
+    </div>
+</section>
+
+<section class="game-description">
+    <h2>Tentang game</h2>
+    {% if game.description %}
+    <p>{{ game.description[:500] }}{% if game.description|length > 500 %}&hellip;{% endif %}</p>
+    {% else %}
+    <p class="muted">Deskripsi belum tersedia.</p>
+    {% endif %}
+</section>
+
+<section>
+    <div class="page-heading">
+        <div>
+            <h2>Perbandingan harga</h2>
+            <p class="muted">Harga perbandingan dinormalisasi ke {{ comparison_currency }}.</p>
+        </div>
+    </div>
+
+    {% if cheapest_offers %}
+    <div class="cheapest-panel">
+        <strong>Harga termurah</strong>
+        {% for offer in cheapest_offers %}
+        <span>{{ offer.store_name }} — {{ comparison_currency }} {{ '%.2f'|format(offer.comparison_price) }}</span>{% if not loop.last %}, {% endif %}
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if offers %}
+    <div class="comparison-table-wrapper">
+    <table class="comparison-table">
+        <thead>
+            <tr>
+                <th>Distributor</th>
+                <th>Harga normal</th>
+                <th>Harga diskon</th>
+                <th>Diskon</th>
+                <th>Perbandingan ({{ comparison_currency }})</th>
+                <th>Aksi</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for offer in offers %}
+            <tr{% if offer.is_cheapest %} class="cheapest-row"{% endif %}>
+                <td>
+                    <strong>{{ offer.store_name }}</strong>
+                    {% if offer.is_cheapest %}<span class="cheapest-badge">Termurah</span>{% endif %}
+                    <small>{{ offer.currency }} · {{ offer.region }}</small>
+                </td>
+                <td>{{ offer.currency }} {{ '%.2f'|format(offer.normal_price) }}</td>
+                <td><strong>{{ offer.currency }} {{ '%.2f'|format(offer.sale_price) }}</strong></td>
+                <td class="discount">-{{ '%.0f'|format(offer.discount_percent) }}%</td>
+                <td>
+                    {% if offer.comparison_price is not none %}
+                    {{ comparison_currency }} {{ '%.2f'|format(offer.comparison_price) }}
+                    {% else %}<span class="muted">Tidak tersedia</span>{% endif %}
+                </td>
+                <td><a class="deal-button" href="{{ offer.deal_url }}" target="_blank" rel="noopener">Lihat deal</a></td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    </div>
+    {% else %}
+    <div class="empty-state"><p>Saat ini tidak ada diskon aktif untuk game ini.</p></div>
+    {% endif %}
+    {% if offers and not comparison_available %}
+    <p class="muted">Harga termurah belum dapat ditentukan karena nilai tukar salah satu mata uang belum tersedia.</p>
+    {% endif %}
+</section>
+{% endblock %}

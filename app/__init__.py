@@ -25,6 +25,7 @@ def create_app(config_object=None, start_scheduler=False):
 
     from . import models  # noqa: F401
     from .routes.deals import deals_bp
+    from .routes.games import games_bp
     from .routes.auth import auth_bp, onboarding_bp
     from .routes.main import main_bp
     from .routes.profile import profile_bp
@@ -34,6 +35,7 @@ def create_app(config_object=None, start_scheduler=False):
     app.register_blueprint(main_bp)
     app.register_blueprint(profile_bp)
     app.register_blueprint(deals_bp)
+    app.register_blueprint(games_bp)
     app.register_blueprint(auth_bp)
     app.register_blueprint(onboarding_bp)
     app.register_blueprint(releases_bp)

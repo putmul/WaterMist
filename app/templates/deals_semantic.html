@@ -1,0 +1,13 @@
+{% from "_deal_card.html" import render_deal_card %}
+{% if deals %}
+<section class="search-section semantic-section">
+    {% if heading %}<h2>{{ heading }}</h2>{% endif %}
+    <div class="game-grid">
+        {% for deal in deals %}
+            {{ render_deal_card(deal, show_score=true) }}
+        {% endfor %}
+    </div>
+</section>
+{% elif message %}
+<div class="empty-state semantic-message"><p>{{ message }}</p></div>
+{% endif %}

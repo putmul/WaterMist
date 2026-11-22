@@ -4,14 +4,14 @@ import logging
 from decimal import Decimal
 
 from flask import current_app
-from sqlalchemy import and_, func, not_
+from sqlalchemy import and_, func, not_, or_
 from sqlalchemy.orm import aliased
 
 from app.collectors.cheapshark_client import CheapSharkClient
 from app.collectors.steam_scraper import SteamDealsCollector
 from app.extensions import db
 from app.models.deal import Deal
-from app.models.game import Game, GameProduct, PriceHistory
+from app.models.game import Game, GameProduct, GameTag, PriceHistory
 from app.models.job_run import JobRun
 from app.models.store import Store
 from app.services.deal_lifecycle import apply_deal_record, end_deal
@@ -388,8 +388,30 @@ class DealService:
                 )
             )
         )
+        nsfw_keywords = current_app.config.get("NSFW_BLACKLIST", ())
+        if nsfw_keywords:
+            nsfw_tag_exists = (
+                db.select(GameTag.id)
+                .where(
+                    GameTag.game_id == Game.id,
+                    or_(
+                        *(
+                            func.lower(GameTag.tag).like(
+                                f"%{keyword.casefold()}%"
+                            )
+                            for keyword in nsfw_keywords
+                            if keyword
+                        )
+                    ),
+                )
+                .exists()
+            )
+            stmt = stmt.where(not_(nsfw_tag_exists))
         if filters.get("q"):
             stmt = stmt.where(Game.name.ilike(f"%{filters['q']}%"))
+        for token in filters.get("name_tokens", ()):
+            if token:
+                stmt = stmt.where(Game.name.ilike(f"%{token}%"))
         if filters.get("store"):
             stmt = stmt.where(Store.name == filters["store"])
         if filters.get("min_discount") is not None:
@@ -413,6 +435,50 @@ class DealService:
         else:
             stmt = stmt.order_by(Deal.discount_percent.desc(), Game.name.asc())
         return stmt
+
+    def search_by_name(self, filters=None):
+        """Return active deals ranked by literal game-name relevance."""
+        filters = dict(filters or {})
+        query = (filters.get("q") or "").strip()
+        if not query:
+            return []
+
+        deals = db.session.scalars(self.list_active_deals(filters)).unique().all()
+        if not deals:
+            tokens = tuple(dict.fromkeys(query.split()))
+            if len(tokens) > 1:
+                token_filters = dict(filters)
+                token_filters["q"] = ""
+                token_filters["name_tokens"] = tokens
+                deals = db.session.scalars(
+                    self.list_active_deals(token_filters)
+                ).unique().all()
+
+        normalized_query = query.casefold()
+
+        def name_rank(deal):
+            name = deal.game_product.game.name.casefold()
+            if name == normalized_query:
+                relevance = 0
+            elif name.startswith(normalized_query):
+                relevance = 1
+            elif normalized_query in name:
+                relevance = 2
+            else:
+                relevance = 3
+
+            sort = filters.get("sort", "relevance")
+            if sort == "price":
+                secondary = (float(deal.sale_price or 0), name)
+            elif sort == "discount":
+                secondary = (-float(deal.discount_percent or 0), name)
+            elif sort == "store":
+                secondary = (deal.game_product.store.name.casefold(), name)
+            else:
+                secondary = (name, float(deal.sale_price or 0))
+            return (relevance, *secondary)
+
+        return sorted(deals, key=name_rank)
 
     @staticmethod
     def stores_with_active_deals():

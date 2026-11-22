@@ -1,17 +1,17 @@
 {% extends "base.html" %}
+{% from "_deal_card.html" import render_deal_card %}
 {% block title %}Deals - WaterMist{% endblock %}
 {% block content %}
 <div class="page-heading">
     <div>
         <h1>Game Deals</h1>
-        {% if semantic_mode and q %}<p class="muted">Pencarian berdasarkan makna untuk: “{{ q }}”</p>{% endif %}
         {% if updated_at %}<p class="muted">Terakhir diperbarui: {{ updated_at }}</p>{% endif %}
     </div>
 </div>
 
 <form class="deal-filters" method="get">
     <label>Game
-        <input type="search" name="q" value="{{ q }}" placeholder="Cari game atau jelaskan game yang kamu cari">
+        <input type="search" name="q" value="{{ q }}" placeholder="Cari judul atau jelaskan game yang kamu cari">
     </label>
     <label>Toko
         <select name="store">
@@ -29,7 +29,7 @@
     </label>
     <label>Urutkan
         <select name="sort">
-            <option value="relevance" {% if sort == 'relevance' %}selected{% endif %}>Relevansi</option>
+            <option value="relevance" {% if sort == 'relevance' %}selected{% endif %}>Relevansi nama</option>
             <option value="discount" {% if sort == 'discount' %}selected{% endif %}>Diskon terbesar</option>
             <option value="price" {% if sort == 'price' %}selected{% endif %}>Harga terendah</option>
             <option value="name" {% if sort == 'name' %}selected{% endif %}>Nama</option>
@@ -40,23 +40,42 @@
     <a class="reset-link" href="{{ url_for('deals.deals') }}">Reset</a>
 </form>
 
+{% if q %}
+<section class="search-section literal-section">
+    {% if deals %}
+    <h2>Hasil berdasarkan nama</h2>
+    <div class="game-grid">
+        {% for deal in deals %}
+            {{ render_deal_card(deal) }}
+        {% endfor %}
+    </div>
+
+    <nav class="pagination" aria-label="Pagination hasil berdasarkan nama">
+        {% if pagination.has_prev %}<a href="{{ url_for('deals.deals', q=q, store=store, min_discount=min_discount, max_discount=max_discount, min_price=min_price, max_price=max_price, sort=sort, page=pagination.prev_num) }}">Sebelumnya</a>{% endif %}
+        <span>Halaman {{ pagination.page }} dari {{ pagination.pages or 1 }}</span>
+        {% if pagination.has_next %}<a href="{{ url_for('deals.deals', q=q, store=store, min_discount=min_discount, max_discount=max_discount, min_price=min_price, max_price=max_price, sort=sort, page=pagination.next_num) }}">Berikutnya</a>{% endif %}
+    </nav>
+    {% else %}
+    <div class="empty-state literal-message">
+        <p>Tidak ada kecocokan langsung berdasarkan nama. Mungkin Anda mencari game lain?</p>
+    </div>
+    {% endif %}
+</section>
+
+<section id="semantic-results" class="semantic-results" aria-live="polite">
+    {% if semantic_config.has_semantic_query %}
+    <div class="search-loading">Mencari rekomendasi berdasarkan makna...</div>
+    {% else %}
+    <div class="empty-state semantic-message"><p>Masukkan judul atau deskripsi game untuk mendapatkan rekomendasi.</p></div>
+    {% endif %}
+</section>
+<noscript><p class="muted">Aktifkan JavaScript untuk memuat rekomendasi berdasarkan makna.</p></noscript>
+{% else %}
 {% if deals %}
 <section class="game-grid">
-{% for deal in deals %}
-    {% set product = deal.game_product %}
-    <article class="game-card deal-card">
-        {% if product.game.cover_image %}<img src="{{ product.game.cover_image }}" alt="{{ product.game.name }}">{% endif %}
-        <h2>{{ product.game.name }}</h2>
-        <p class="deal-store">{{ product.store.name }} · {{ product.currency }} ({{ product.region }})</p>
-        <p><s>{{ product.currency }} {{ '%.2f'|format(deal.normal_price) }}</s>
-            <strong>{{ product.currency }} {{ '%.2f'|format(deal.sale_price) }}</strong></p>
-        <p class="discount">Skor diskon: -{{ '%.0f'|format(deal.discount_percent) }}%</p>
-        {% if semantic_mode and deal.semantic_score is not none %}
-        <p class="muted">Relevansi: {{ '%.0f'|format(deal.semantic_score * 100) }}%</p>
-        {% endif %}
-        <a class="deal-button" href="{{ deal.deal_url }}" target="_blank" rel="noopener">Lihat deal</a>
-    </article>
-{% endfor %}
+    {% for deal in deals %}
+        {{ render_deal_card(deal) }}
+    {% endfor %}
 </section>
 
 <nav class="pagination" aria-label="Pagination">
@@ -66,5 +85,13 @@
 </nav>
 {% else %}
 <div class="empty-state"><p>Belum ada deal yang sesuai dengan filter.</p></div>
+{% endif %}
+{% endif %}
+
+{% if q and semantic_config.has_semantic_query %}
+<script>
+window.watermistSemanticSearch = {{ semantic_config|tojson }};
+</script>
+<script src="{{ url_for('static', filename='js/deals-search.js') }}" defer></script>
 {% endif %}
 {% endblock %}
