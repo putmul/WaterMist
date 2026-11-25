@@ -12,6 +12,7 @@
   --ink2: #1f2b38;
   --overcast: #2f3539;
   --tide: #2f6f8f;
+  --cloud: #fff;
   --deep-tide: #235670;
   --sky: #bfdbf0;
   --border: 2px solid var(--ink);
@@ -20,6 +21,7 @@
   --font-heading: "Alagard", "Pixelify Sans", serif;
   --font-body: "Pixelify Sans", monospace;
   --topbar: 72px;
+  --background-image: url("../assets/images/watermist-background-transparent.png");
 }
 
 [data-theme="dark"] {
@@ -27,10 +29,13 @@
   --haze: #172a38;
   --drizzle: #223c4d;
   --ink: #e3eef0;
+  --cloud: #293d58;
+  --ink2: #84aad2;
   --overcast: #9db2ba;
   --tide: #7fc4c9;
   --deep-tide: #5fa6ac;
   --sky: #16293a;
+  --background-image: url("../assets/images/watermist-background-dark.png");
 }
 
 * {
@@ -84,7 +89,7 @@ a {
   bottom: 0;
   left: 0;
   height: max(55vh, 420px);
-  background: url("../assets/images/watermist-background-transparent.png") center bottom / cover no-repeat;
+  background: var(--background-image) no-repeat bottom center / cover;
   image-rendering: pixelated;
   transition: filter 360ms ease, transform 360ms ease;
 }
@@ -98,14 +103,14 @@ a {
   position: absolute;
   width: 8px;
   height: 8px;
-  background: #fff;
+  background: var(--cloud);
   opacity: 0.85;
   box-shadow:
-    16px 0 #fff, 24px 0 #fff, 32px 0 #fff, 40px 0 #fff,
-    -8px 8px #fff, 0 8px #fff, 8px 8px #fff, 16px 8px #fff,
-    24px 8px #fff, 32px 8px #fff, 40px 8px #fff, 48px 8px #fff,
-    56px 8px #fff, 0 16px #fff, 8px 16px #fff, 16px 16px #fff,
-    24px 16px #fff, 32px 16px #fff, 40px 16px #fff, 48px 16px #fff;
+    16px 0 var(--cloud), 24px 0 var(--cloud), 32px 0 var(--cloud), 40px 0 var(--cloud),
+    -8px 8px var(--cloud), 0 8px var(--cloud), 8px 8px var(--cloud), 16px 8px var(--cloud),
+    24px 8px var(--cloud), 32px 8px var(--cloud), 40px 8px var(--cloud), 48px 8px var(--cloud),
+    56px 8px var(--cloud), 0 16px var(--cloud), 8px 16px var(--cloud), 16px 16px var(--cloud),
+    24px 16px var(--cloud), 32px 16px var(--cloud), 40px 16px var(--cloud), 48px 16px var(--cloud);
   transform: scale(var(--s, 2));
   transform-origin: top left;
   transition: filter 360ms ease;
@@ -153,6 +158,14 @@ a {
 }
 
 .btn-secondary:hover { background: var(--drizzle); }
+
+.theme-toggle {
+  min-width: 44px;
+  padding: 10px 16px;
+  font-size: 16px;
+  line-height: 1;
+  white-space: nowrap;
+}
 
 .search {
   display: flex;
@@ -262,6 +275,17 @@ main {
   justify-content: center;
   padding-top: 0;
   text-align: center;
+}
+
+.hero-theme-toggle {
+  position: absolute;
+  top: 24px;
+  right: 40px;
+  z-index: 2;
+}
+
+.hero-theme-toggle:hover {
+  background: var(--drizzle);
 }
 
 .hero h1 {
@@ -470,6 +494,11 @@ main {
 }
 
 @media (max-width: 767px) {
+  .hero-theme-toggle {
+    top: 16px;
+    right: 16px;
+  }
+
   .dashboard-grid {
     width: calc(100% - 32px);
     grid-template-columns: 1fr;

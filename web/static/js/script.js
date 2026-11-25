@@ -13,6 +13,40 @@
   window.addEventListener("scroll", updateTopbar, { passive: true });
   updateTopbar();
 
+  var themeToggles = document.querySelectorAll(".theme-toggle");
+  var savedTheme = localStorage.getItem("watermist-theme");
+
+  if (savedTheme === "dark") {
+    document.documentElement.setAttribute("data-theme", "dark");
+  }
+
+  function updateThemeToggle() {
+    var isDark = document.documentElement.getAttribute("data-theme") === "dark";
+    themeToggles.forEach(function (toggle) {
+      toggle.textContent = isDark ? "☀" : "☾";
+      toggle.setAttribute("aria-label", isDark ? "Ganti ke light mode" : "Ganti ke dark mode");
+      toggle.setAttribute("aria-pressed", String(isDark));
+    });
+  }
+
+  themeToggles.forEach(function (themeToggle) {
+    themeToggle.addEventListener("click", function () {
+    var isDark = document.documentElement.getAttribute("data-theme") === "dark";
+
+    if (isDark) {
+      document.documentElement.removeAttribute("data-theme");
+      localStorage.setItem("watermist-theme", "light");
+    } else {
+      document.documentElement.setAttribute("data-theme", "dark");
+      localStorage.setItem("watermist-theme", "dark");
+    }
+
+    updateThemeToggle();
+    });
+  });
+
+  updateThemeToggle();
+
   document.querySelectorAll(".search").forEach(function (form) {
     form.addEventListener("submit", function (event) {
       event.preventDefault();
