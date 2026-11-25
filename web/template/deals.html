@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Deals — WaterMist</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('frontend.static', filename='css/style.css') }}">
+  <link rel="stylesheet" href="{{ url_for('frontend.static', filename='css/pages.css') }}">
+  <script src="{{ url_for('frontend.static', filename='js/layout.js') }}"></script>
+</head>
+<body data-page="deals">
+  <div class="scene" aria-hidden="true"><span class="cloud c1"></span><span class="cloud c2"></span><span class="cloud c3"></span><span class="cloud c4"></span></div>
+  <div data-slot="topbar"></div>
+  <main class="page">
+    <header class="page-header container"><h1>Deals</h1><p>Temukan penawaran terbaik untuk game favoritmu.</p></header>
+    <div class="container page-body">
+      <form class="frame" action="{{ url_for('deals.deals') }}" method="get" style="display:flex;flex-wrap:wrap;gap:12px;padding:20px;margin-bottom:28px">
+        <input class="input" type="search" name="q" value="{{ q }}" placeholder="Cari game" aria-label="Cari game">
+        <select class="select" name="store" aria-label="Toko"><option value="">Semua toko</option>{% for item in stores %}<option value="{{ item.name }}" {% if store == item.name %}selected{% endif %}>{{ item.name }}</option>{% endfor %}</select>
+        <input class="input" type="number" min="0" max="100" name="min_discount" value="{{ min_discount or '' }}" placeholder="Diskon minimum %" aria-label="Diskon minimum">
+        <input class="input" type="number" min="0" name="max_price" value="{{ max_price or '' }}" placeholder="Harga maksimum" aria-label="Harga maksimum">
+        <select class="select" name="sort" aria-label="Urutkan">
+          {% for value, label in [('discount','Diskon terbesar'),('price','Harga terendah'),('relevance','Relevansi'),('name','Nama'),('store','Toko'),('popularity','Popularitas')] %}<option value="{{ value }}" {% if sort == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
+        </select>
+        <button class="btn btn-primary" type="submit">Terapkan Filter</button>
+        {% if q or store or min_discount or max_price %}<a class="btn btn-secondary" href="{{ url_for('deals.deals') }}">Hapus filter</a>{% endif %}
+      </form>
+      {% if updated_at %}<p class="meta">Data diperbarui: {{ updated_at }}</p>{% endif %}
+      {% if q %}<h2>Hasil berdasarkan nama</h2>{% endif %}
+      {% if deals %}
+      <div class="game-grid game-grid--2">
+        {% for deal in deals %}{% set product = deal.game_product %}{% set game = product.game %}
+        <article class="game frame">
+          {% if game.cover_image %}<img class="cover" src="{{ game.cover_image }}" alt="Cover {{ game.name }}" loading="lazy">{% endif %}
+          <h3><a href="{{ url_for('games.detail', game_id=game.id) }}">{{ game.name }}</a></h3>
+          <p class="meta">{{ product.store.name }} · {{ product.currency }} ({{ product.region }})</p>
+          <div class="price-row"><span class="badge">-{{ '%.0f'|format(deal.discount_percent) }}%</span><span class="price">{{ product.currency }} {{ '%.2f'|format(deal.sale_price) }}</span><s class="price-old">{{ product.currency }} {{ '%.2f'|format(deal.normal_price) }}</s></div>
+          <a class="btn btn-primary" href="{{ deal.deal_url }}" target="_blank" rel="noopener">Lihat deal</a>
+        </article>
+        {% endfor %}
+      </div>
+      {% elif q %}<p class="frame" style="padding:20px">Tidak ada hasil berdasarkan nama.</p>
+      {% else %}<p class="frame" style="padding:20px">Belum ada deal yang sesuai dengan filter.</p>{% endif %}
+      {% if q %}<section id="semantic-results" aria-live="polite">
+        {% if semantic_config.has_semantic_query %}<p class="frame" style="padding:16px">Mencari rekomendasi berdasarkan makna...</p>
+        {% else %}<p class="meta">Masukkan deskripsi game untuk rekomendasi berdasarkan makna.</p>{% endif %}
+      </section>
+      <script>window.watermistSemanticSearch = {{ semantic_config|tojson }};</script>
+      <script src="{{ url_for('static', filename='js/deals-search.js') }}" defer></script>{% endif %}
+      {% if pagination.pages and pagination.pages > 1 %}<nav class="pagination" aria-label="Halaman">
+        {% if pagination.has_prev %}<a class="page-btn" href="{{ url_for('deals.deals', q=q, store=store, min_discount=min_discount, max_price=max_price, sort=sort, page=pagination.prev_num) }}">‹</a>{% endif %}
+        <span>Halaman {{ pagination.page }} dari {{ pagination.pages }}</span>
+        {% if pagination.has_next %}<a class="page-btn" href="{{ url_for('deals.deals', q=q, store=store, min_discount=min_discount, max_price=max_price, sort=sort, page=pagination.next_num) }}">›</a>{% endif %}
+      </nav>{% endif %}
+    </div>
+    <div data-slot="footer"></div>
+  </main>
+</body>
+</html>

@@ -1,8 +1,10 @@
 """WaterMist Flask application factory."""
 
 import logging
+from pathlib import Path
 
 from flask import Flask
+from jinja2 import ChoiceLoader, FileSystemLoader
 
 from config import Config
 
@@ -16,6 +18,12 @@ def create_app(config_object=None, start_scheduler=False):
         app.config.from_mapping(config_object)
     else:
         app.config.from_object(config_object or Config)
+    # Prefer the primary /web templates while retaining app/templates as a
+    # fallback for auth, profile, and prototype pages that are out of scope.
+    web_templates = Path(app.root_path).parent / "web" / "template"
+    app.jinja_loader = ChoiceLoader(
+        [FileSystemLoader(str(web_templates)), app.jinja_loader]
+    )
     logging.basicConfig(
         level=getattr(logging, app.config.get("LOG_LEVEL", "INFO"), logging.INFO),
         format="%(asctime)s %(levelname)s %(name)s: %(message)s",
@@ -25,6 +33,7 @@ def create_app(config_object=None, start_scheduler=False):
 
     from . import models  # noqa: F401
     from .routes.deals import deals_bp
+    from .routes.frontend import frontend_bp
     from .routes.games import games_bp
     from .routes.auth import auth_bp, onboarding_bp
     from .routes.main import main_bp
@@ -33,6 +42,7 @@ def create_app(config_object=None, start_scheduler=False):
     from .routes.releases import releases_bp
 
     app.register_blueprint(main_bp)
+    app.register_blueprint(frontend_bp)
     app.register_blueprint(profile_bp)
     app.register_blueprint(deals_bp)
     app.register_blueprint(games_bp)

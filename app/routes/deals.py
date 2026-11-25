@@ -136,6 +136,7 @@ def deals():
         semantic_intent=intent,
         literal_deals_found=bool(literal_deals),
         semantic_config=semantic_config,
+        page=page,
         **filters,
     )
 

@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Recently Released — WaterMist</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('frontend.static', filename='css/style.css') }}"><link rel="stylesheet" href="{{ url_for('frontend.static', filename='css/pages.css') }}">
+  <script src="{{ url_for('frontend.static', filename='js/layout.js') }}"></script>
+</head>
+<body data-page="new-releases">
+  <div class="scene" aria-hidden="true"><span class="cloud c1"></span><span class="cloud c2"></span><span class="cloud c3"></span><span class="cloud c4"></span></div><div data-slot="topbar"></div>
+  <main class="page"><header class="page-header container"><h1>Recently Released</h1><p>Game yang dirilis dalam {{ days }} hari terakhir.</p></header>
+    <div class="container page-body">
+      <form class="toolbar" action="{{ url_for('releases.releases') }}" method="get" style="margin-bottom:24px">
+        <input class="input" type="search" name="q" value="{{ q }}" placeholder="Cari game terbaru..." aria-label="Cari game terbaru">
+        <select class="select" name="mode" aria-label="Urutkan rilis"><option value="latest" {% if mode == 'latest' %}selected{% endif %}>Terbaru</option><option value="preference" {% if mode == 'preference' %}selected{% endif %}>Untukmu</option></select>
+        <button class="btn btn-primary" type="submit">Cari</button>
+      </form>
+      {% if preference_message %}<p class="frame" style="padding:16px">{{ preference_message }}</p>{% endif %}
+      {% if games %}<div class="game-grid">
+        {% for item in games %}{% set game = item.game if personalized else item %}
+        <article class="game frame">
+          {% if game.cover_image %}<img class="cover" src="{{ game.cover_image }}" alt="Cover {{ game.name }}" loading="lazy">{% endif %}
+          <h3>{{ game.name }}</h3><p class="meta">Rilis: {{ game.release_date or 'Tanggal tidak tersedia' }}</p>
+          {% if personalized %}<p class="meta">Cocok dengan preferensimu · Fit: {{ '%.0f'|format(item.fit_score * 100) }}%</p>{% endif %}
+          {% if game.steam_app_id %}<a class="btn btn-secondary" href="https://store.steampowered.com/app/{{ game.steam_app_id }}/" target="_blank" rel="noopener">Lihat di Steam</a>{% endif %}
+        </article>{% endfor %}
+      </div>{% else %}<p class="frame" style="padding:20px">Belum ada data game terbaru yang sesuai.</p>{% endif %}
+      {% if pagination.pages and pagination.pages > 1 %}<nav class="pagination" aria-label="Halaman">
+        {% if pagination.has_prev %}<a class="page-btn" href="{{ url_for('releases.releases', q=q, mode=mode, per_page=per_page, page=pagination.prev_num) }}">‹</a>{% endif %}<span>Halaman {{ pagination.page }} dari {{ pagination.pages }}</span>
+        {% if pagination.has_next %}<a class="page-btn" href="{{ url_for('releases.releases', q=q, mode=mode, per_page=per_page, page=pagination.next_num) }}">›</a>{% endif %}
+      </nav>{% endif %}
+    </div><div data-slot="footer"></div>
+  </main>
+</body>
+</html>

@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="../static/css/style.css">
+<link rel="stylesheet" href="{{ url_for('frontend.static', filename='css/style.css') }}">
 </head>
 <body>
 
@@ -18,13 +18,13 @@
 <header class="topbar" id="topbar">
   <a class="wordmark" href="#top">WATERMIST</a>
   <nav aria-label="Navigasi utama">
-    <a href="#dashboard">Recently Released</a>
-    <a href="#dashboard">Deals</a>
-    <a href="#dashboard">Recommendations</a>
+    <a href="{{ url_for('releases.releases') }}">Recently Released</a>
+    <a href="{{ url_for('deals.deals') }}">Deals</a>
+    <a href="{{ url_for('recommendations.recommendations') }}">Recommendations</a>
   </nav>
   <div class="tools">
-    <form class="search" role="search">
-      <input type="search" placeholder="Cari game..." aria-label="Cari game">
+    <form class="search" role="search" action="{{ url_for('deals.deals') }}" method="get">
+      <input name="q" type="search" placeholder="Cari game..." aria-label="Cari game">
     </form>
     <select aria-label="Mata uang"><option>IDR</option><option>USD</option></select>
     <button class="btn btn-secondary theme-toggle" type="button" aria-label="Ganti ke dark mode" aria-pressed="false" title="Ganti tema">☾</button>
@@ -37,13 +37,13 @@
     <button class="btn btn-secondary theme-toggle hero-theme-toggle" type="button" aria-label="Ganti ke dark mode" aria-pressed="false" title="Ganti tema">☾</button>
     <h1>WATERMIST</h1>
     <p class="tagline">Temukan Game. Bayar Sesuai Dompetmu.</p>
-    <form class="search" role="search">
-      <input type="search" placeholder="Cari game atau genre..." aria-label="Cari game atau genre">
+    <form class="search" role="search" action="{{ url_for('deals.deals') }}" method="get">
+      <input name="q" type="search" placeholder="Cari game atau genre..." aria-label="Cari game atau genre">
       <button class="btn btn-primary" type="submit">Cari</button>
     </form>
     <div class="cta">
-      <a class="btn btn-primary" href="#dashboard">Explore Deals →</a>
-      <a class="btn btn-secondary" href="#signup">Sign Up</a>
+      <a class="btn btn-primary" href="{{ url_for('deals.deals') }}">Explore Deals →</a>
+      <a class="btn btn-secondary" href="{{ url_for('recommendations.recommendations') }}">Recommendations</a>
     </div>
     <p class="scroll-hint" aria-hidden="true">▼</p>
     <p class="scroll-hint2" aria-hidden="true">▼</p>
@@ -51,19 +51,19 @@
 
   <section class="dashboard" id="dashboard">
     <div class="dashboard-grid">
-      <a class="card" href="#deals">
+      <a class="card" href="{{ url_for('deals.deals') }}">
         <div><h2>Deal Terbaik</h2><p>Bandingkan harga di berbagai toko untuk mendapatkan penawaran terbaik.</p><span class="link">Lihat Deals →</span></div>
         <div class="thumb t1" role="img" aria-label="Ilustrasi kastil"></div>
       </a>
-      <a class="card" href="#rilis">
+      <a class="card" href="{{ url_for('releases.releases') }}">
         <div><h2>Rilis Baru</h2><p>Temukan game yang baru dirilis dalam 30 hari terakhir.</p><span class="link">Lihat Rilis →</span></div>
         <div class="thumb t2" role="img" aria-label="Ilustrasi musafir"></div>
       </a>
-      <a class="card" href="#quiz">
+      <a class="card" href="{{ url_for('recommendations.recommendations') }}">
         <div><h2>Rekomendasi</h2><p>Dapatkan rekomendasi personal berdasarkan selera bermainmu.</p><span class="link">Mulai Quiz →</span></div>
         <div class="thumb t3" role="img" aria-label="Ilustrasi danau berkabut"></div>
       </a>
-      <a class="card" href="#gems">
+      <a class="card" href="{{ url_for('recommendations.recommendations') }}#gems">
         <div><h2>Hidden Gems</h2><p>Temukan game-game keren yang jarang diketahui.</p><span class="link">Lihat Rekomendasi →</span></div>
         <div class="thumb t4" role="img" aria-label="Ilustrasi pulau"></div>
       </a>
@@ -75,6 +75,6 @@
   </section>
 </main>
 
-<script src="../static/js/script.js" defer></script>
+<script src="{{ url_for('frontend.static', filename='js/script.js') }}" defer></script>
 </body>
 </html>

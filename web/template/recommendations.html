@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Recommendations — WaterMist</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('frontend.static', filename='css/style.css') }}"><link rel="stylesheet" href="{{ url_for('frontend.static', filename='css/pages.css') }}">
+  <script src="{{ url_for('frontend.static', filename='js/layout.js') }}"></script>
+</head>
+<body data-page="recommendations">
+  <div class="scene" aria-hidden="true"><span class="cloud c1"></span><span class="cloud c2"></span><span class="cloud c3"></span><span class="cloud c4"></span></div><div data-slot="topbar"></div>
+  <main class="page"><header class="page-header container"><h1>Recommendations</h1><p>Rekomendasi game berdasarkan genre dan tag pilihanmu.</p></header>
+    <div class="container page-body">
+      <form class="frame" action="{{ url_for('recommendations.recommendations') }}" method="get" style="display:flex;flex-wrap:wrap;gap:12px;padding:20px;margin-bottom:28px">
+        <label>Genre <input class="input" name="genres" value="{{ result.genres|join(', ') }}" placeholder="RPG, Action"></label>
+        <label>Tag <input class="input" name="tags" value="{{ result.tags|join(', ') }}" placeholder="co-op, exploration"></label>
+        <button class="btn btn-primary" type="submit">Cari rekomendasi</button>
+        {% if result.genres or result.tags %}<a class="btn btn-secondary" href="{{ url_for('recommendations.recommendations') }}">Reset</a>{% endif %}
+      </form>
+      <section id="popular"><h2>Popular Picks</h2>
+        <div class="rec-list">
+          {% for item in result.popular %}{% set game = item.game %}
+          <article class="rec frame">
+            {% if game.cover_image %}<img class="cover" src="{{ game.cover_image }}" alt="Cover {{ game.name }}" loading="lazy">{% endif %}
+            <div><div class="rec-head"><h3>{{ game.name }}</h3></div>
+              {% if item.reason_text %}<p>{{ item.reason_text }}</p>{% else %}<p>Direkomendasikan berdasarkan pilihan genre dan tag kamu.</p>{% endif %}
+              {% if game.steam_rating_percent %}<p class="meta">Rating Steam: {{ game.steam_rating_percent }}% positif{% if game.steam_rating_count %} · {{ game.steam_rating_count }} ulasan{% endif %}</p>{% endif %}
+            </div><div class="rec-actions"><a class="btn btn-secondary" href="{{ url_for('games.detail', game_id=game.id) }}">Detail game</a></div>
+          </article>{% else %}<p class="frame" style="padding:18px">Belum ada rekomendasi populer yang cocok.</p>{% endfor %}
+        </div>
+      </section>
+      <section id="gems" style="margin-top:36px"><h2>Hidden Gems</h2>
+        <div class="rec-list">
+          {% for item in result.hidden_gem %}{% set game = item.game %}
+          <article class="rec frame">
+            {% if game.cover_image %}<img class="cover" src="{{ game.cover_image }}" alt="Cover {{ game.name }}" loading="lazy">{% endif %}
+            <div><div class="rec-head"><h3>{{ game.name }}</h3><span class="badge">Hidden Gem</span></div>
+              {% if item.reason_text %}<p>{{ item.reason_text }}</p>{% else %}<p>Game dengan ulasan positif yang belum terlalu populer.</p>{% endif %}
+              {% if game.steam_rating_percent %}<p class="meta">Rating Steam: {{ game.steam_rating_percent }}% positif{% if game.steam_rating_count %} · {{ game.steam_rating_count }} ulasan{% endif %}</p>{% endif %}
+            </div><div class="rec-actions"><a class="btn btn-secondary" href="{{ url_for('games.detail', game_id=game.id) }}">Detail game</a></div>
+          </article>{% else %}<p class="frame" style="padding:18px">Belum ada Hidden Gems yang memenuhi kriteria.</p>{% endfor %}
+        </div>
+      </section>
+    </div><div data-slot="footer"></div>
+  </main>
+</body>
+</html>

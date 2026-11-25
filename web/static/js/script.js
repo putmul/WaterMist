@@ -49,6 +49,7 @@
 
   document.querySelectorAll(".search").forEach(function (form) {
     form.addEventListener("submit", function (event) {
+      if (form.action && form.getAttribute("action")) return;
       event.preventDefault();
     });
   });

@@ -64,7 +64,7 @@ def releases():
         )
 
     return render_template(
-        "releases.html",
+        "new-releases.html",
         games=pagination.items,
         pagination=pagination,
         days=days,
