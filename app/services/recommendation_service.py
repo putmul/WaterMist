@@ -2,6 +2,8 @@
 
 import logging
 
+from flask import current_app
+
 from app.extensions import db
 from app.models import (
     Game,
@@ -53,6 +55,19 @@ class RecommendationService:
             owned_game_ids=owned_ids,
             dismissed_game_ids=dismissed_ids,
             limit=limit,
+            hidden_gem_config={
+                "min_rating_percent": current_app.config.get(
+                    "HIDDEN_GEM_MIN_RATING_PERCENT", 80
+                ),
+                "min_reviews": current_app.config.get("HIDDEN_GEM_MIN_REVIEWS", 25),
+                "max_reviews": current_app.config.get(
+                    "HIDDEN_GEM_MAX_REVIEWS", 10000
+                ),
+                "max_popularity_score": current_app.config.get(
+                    "HIDDEN_GEM_MAX_POPULARITY_SCORE", 0.40
+                ),
+                "min_fit": current_app.config.get("HIDDEN_GEM_MIN_FIT", 0.05),
+            },
         )
         ranked["mode"] = mode
         ranked["genres"] = list(genres or ())
@@ -77,7 +92,9 @@ class RecommendationService:
         for recommendation_type in ("popular", "hidden_gem"):
             key = "popular" if recommendation_type == "popular" else "hidden_gem"
             for position, item in enumerate(results[key], start=1):
-                reason_code, reason_text = self._reason(item, user.preference_mode)
+                reason_code, reason_text = self._reason(
+                    item, user.preference_mode, recommendation_type
+                )
                 db.session.add(
                     Recommendation(
                         run_id=run.id,
@@ -141,7 +158,16 @@ class RecommendationService:
         return interaction
 
     @staticmethod
-    def _reason(item, mode):
+    def _reason(item, mode, recommendation_type=None):
+        if recommendation_type == "hidden_gem":
+            game = item["game"]
+            return (
+                "hidden_gem_quality_low_popularity",
+                (
+                    f"Review positif {game.steam_rating_percent}% dengan "
+                    f"{game.steam_rating_count:,} review, tetapi belum terlalu populer."
+                ),
+            )
         if mode == "steam":
             return (
                 "steam_profile",

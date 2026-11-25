@@ -5,6 +5,7 @@ from app.recommendation.scoring import (
     calculate_personalized_score,
     calculate_popularity_score,
     calculate_quality_score,
+    is_hidden_gem,
 )
 
 
@@ -28,6 +29,16 @@ class RecommendationScoringTests(unittest.TestCase):
         matching = calculate_personalized_score(1, 0.5, 0, "popular")
         popular = calculate_personalized_score(0, 0.5, 1, "popular")
         self.assertGreater(matching, popular)
+
+    def test_hidden_gem_requires_positive_reviews_and_enough_reviews(self):
+        self.assertTrue(is_hidden_gem(80, 25, 0.40))
+        self.assertFalse(is_hidden_gem(79, 100, 0.10))
+        self.assertFalse(is_hidden_gem(100, 24, 0.10))
+        self.assertFalse(is_hidden_gem(100, 100, 0.41))
+        self.assertFalse(is_hidden_gem(None, 100, 0.10))
+
+    def test_hidden_gem_has_absolute_review_cap(self):
+        self.assertFalse(is_hidden_gem(95, 10001, 0.10))
 
 
 if __name__ == "__main__":

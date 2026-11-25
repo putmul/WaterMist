@@ -26,15 +26,29 @@
 <p><a href="{{ url_for('profile.profile') }}">Kelola profil dan koneksi Steam</a></p>
 {% endif %}
 
-{% macro cards(items) %}
+{% macro cards(items, category='') %}
 <div class="recommendation-grid">
 {% for item in items %}
-    {% set game = item.game if item.game is defined else item.game %}
+    {% set game = item.game %}
     <article class="recommendation-card">
         {% if game.cover_image %}<img src="{{ game.cover_image }}" alt="{{ game.name }}">{% endif %}
         <h3>{{ game.name }}</h3>
-        <p>{{ item.reason_text or 'Dipilih berdasarkan kecocokan preferensi.' }}</p>
-        <small>Fit: {{ '%.2f'|format(item.fit_score) }} · Score: {{ '%.2f'|format(item.recommendation_score if item.recommendation_score is defined else item.popular_score) }}</small>
+        {% if category == 'hidden_gem' %}
+        <p><strong>Hidden Gem</strong> · {{ game.steam_rating_percent }}% positif · {{ '{:,}'.format(game.steam_rating_count).replace(',', '.') }} review</p>
+        {% endif %}
+        <p>
+            {% if item.reason_text %}
+            {{ item.reason_text }}
+            {% elif category == 'hidden_gem' %}
+            Review positif {{ game.steam_rating_percent }}% dengan {{ '{:,}'.format(game.steam_rating_count).replace(',', '.') }} review, tetapi belum terlalu populer.
+            {% else %}
+            Dipilih berdasarkan kecocokan preferensi.
+            {% endif %}
+        </p>
+        <small>
+            {% if category != 'hidden_gem' or item.fit_score > 0 %}Fit: {{ '%.2f'|format(item.fit_score) }} · {% endif %}
+            Score: {{ '%.2f'|format(item.recommendation_score if item.recommendation_score is defined else item.popular_score) }}
+        </small>
         {% if user %}
         <form method="post" action="{{ url_for('recommendations.record_interaction') }}">
             <input type="hidden" name="game_id" value="{{ game.id }}">
@@ -51,10 +65,10 @@
 
 <section>
     <h2>Popular Picks</h2>
-    {{ cards(result.popular) }}
+    {{ cards(result.popular, 'popular') }}
 </section>
 <section>
     <h2>Hidden Gems</h2>
-    {{ cards(result.hidden_gem) }}
+    {{ cards(result.hidden_gem, 'hidden_gem') }}
 </section>
 {% endblock %}

@@ -5,11 +5,19 @@ from app.recommendation.scoring import (
     calculate_personalized_score,
     calculate_popularity_score,
     calculate_quality_score,
+    is_hidden_gem,
 )
 from app.recommendation.similarity import cosine_similarity, game_feature_vector
 
 
-def rank_games(games, profile, owned_game_ids=None, dismissed_game_ids=None, limit=20):
+def rank_games(
+    games,
+    profile,
+    owned_game_ids=None,
+    dismissed_game_ids=None,
+    limit=20,
+    hidden_gem_config=None,
+):
     """Return scored game dictionaries for both recommendation categories."""
     owned = set(owned_game_ids or ())
     dismissed = set(dismissed_game_ids or ())
@@ -19,6 +27,9 @@ def rank_games(games, profile, owned_game_ids=None, dismissed_game_ids=None, lim
     max_reviews = max(
         (game.steam_rating_count or 0 for game in candidates), default=0
     )
+    hidden_gem_config = dict(hidden_gem_config or {})
+    min_fit = float(hidden_gem_config.get("min_fit", 0.05))
+    has_profile = bool(profile)
     scored = []
     for game in candidates:
         popularity = calculate_popularity_score(game.steam_rating_count, max_reviews)
@@ -37,7 +48,10 @@ def rank_games(games, profile, owned_game_ids=None, dismissed_game_ids=None, lim
                     fit, quality, popularity, "popular"
                 ),
                 "hidden_gem_score": calculate_personalized_score(
-                    fit, quality, popularity, "hidden_gem"
+                    fit,
+                    quality,
+                    popularity,
+                    "hidden_gem" if has_profile else "hidden_gem_generic",
                 ),
             }
         )
@@ -48,10 +62,18 @@ def rank_games(games, profile, owned_game_ids=None, dismissed_game_ids=None, lim
     hidden_candidates = [
         item
         for item in scored
-        if item["popularity_score"] <= 0.40
-        and item["fit_score"] >= 0.05
-        and item["quality_score"] is not None
-        and item["quality_score"] >= 0.55
+        if is_hidden_gem(
+            item["game"].steam_rating_percent,
+            item["game"].steam_rating_count,
+            item["popularity_score"],
+            min_rating_percent=hidden_gem_config.get("min_rating_percent", 80),
+            min_reviews=hidden_gem_config.get("min_reviews", 25),
+            max_reviews=hidden_gem_config.get("max_reviews", 10000),
+            max_popularity_score=hidden_gem_config.get(
+                "max_popularity_score", 0.40
+            ),
+        )
+        and (not has_profile or item["fit_score"] >= min_fit)
     ]
     hidden = sorted(
         hidden_candidates, key=lambda item: item["hidden_gem_score"], reverse=True

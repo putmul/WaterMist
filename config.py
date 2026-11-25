@@ -166,3 +166,16 @@ class Config:
         os.getenv("SEMANTIC_EMBEDDING_BATCH_SIZE"), 32
     )
     SEMANTIC_DEFAULT_CURRENCY = os.getenv("SEMANTIC_DEFAULT_CURRENCY", STEAM_CURRENCY)
+
+    # Hidden Gems are games with strong review sentiment but a relatively
+    # small audience.  Keep these values configurable so the classification
+    # can be tuned against the size and distribution of the local dataset.
+    HIDDEN_GEM_MIN_RATING_PERCENT = _as_int(
+        os.getenv("HIDDEN_GEM_MIN_RATING_PERCENT"), 80
+    )
+    HIDDEN_GEM_MIN_REVIEWS = _as_int(os.getenv("HIDDEN_GEM_MIN_REVIEWS"), 25)
+    HIDDEN_GEM_MAX_REVIEWS = _as_int(os.getenv("HIDDEN_GEM_MAX_REVIEWS"), 10000)
+    HIDDEN_GEM_MAX_POPULARITY_SCORE = float(
+        os.getenv("HIDDEN_GEM_MAX_POPULARITY_SCORE", "0.40")
+    )
+    HIDDEN_GEM_MIN_FIT = float(os.getenv("HIDDEN_GEM_MIN_FIT", "0.05"))

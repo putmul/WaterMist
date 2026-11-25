@@ -8,7 +8,7 @@ from the Flask request lifecycle.
 import math
 
 
-ALGORITHM_VERSION = "personalized-v1"
+ALGORITHM_VERSION = "personalized-v2-hidden-gem"
 
 
 def _bounded(value, low=0.0, high=1.0):
@@ -65,6 +65,43 @@ def calculate_novelty_score(popularity_score):
     return _bounded(1.0 - _bounded(popularity_score or 0.0))
 
 
+def is_hidden_gem(
+    rating_percent,
+    total_reviews,
+    popularity_score,
+    *,
+    min_rating_percent=80,
+    min_reviews=25,
+    max_reviews=10000,
+    max_popularity_score=0.40,
+):
+    """Return whether review quality and low popularity meet the policy.
+
+    The raw rating threshold prevents a high quality score from being enough
+    on its own, while the minimum review count avoids promoting games based on
+    only a handful of reviews.  Popularity is checked both relatively and by
+    an absolute cap so the result remains understandable to users.
+    """
+    try:
+        rating = float(rating_percent)
+    except (TypeError, ValueError):
+        return False
+
+    reviews = _non_negative_integer(total_reviews)
+    try:
+        popularity = float(popularity_score)
+    except (TypeError, ValueError):
+        return False
+
+    if reviews is None or not 0 <= rating <= 100:
+        return False
+    if reviews < int(min_reviews) or reviews > int(max_reviews):
+        return False
+    return rating >= float(min_rating_percent) and popularity <= float(
+        max_popularity_score
+    )
+
+
 def calculate_personalized_score(
     fit_score,
     quality_score,
@@ -79,6 +116,8 @@ def calculate_personalized_score(
 
     if recommendation_type == "hidden_gem":
         score = 0.70 * fit + 0.20 * quality + 0.10 * novelty
+    elif recommendation_type == "hidden_gem_generic":
+        score = 0.70 * quality + 0.30 * novelty
     else:
         score = 0.60 * fit + 0.25 * quality + 0.15 * popularity
     return _bounded(score)
@@ -91,4 +130,5 @@ __all__ = [
     "calculate_final_score",
     "calculate_novelty_score",
     "calculate_personalized_score",
+    "is_hidden_gem",
 ]
