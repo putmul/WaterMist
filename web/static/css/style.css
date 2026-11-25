@@ -7,7 +7,7 @@
 :root {
   --fog: #e6eef0;
   --haze: #d5e2e5;
-  --drizzle: #c0d2d7;
+  --drizzle: #00502c;
   --ink: #29425c;
   --ink2: #1f2b38;
   --overcast: #2f3539;
@@ -343,22 +343,56 @@ main {
 }
 
 .card {
+  --px: 2px;
+  --gap: 6px;
+  --chip: 6px;
+  --card-bg: rgb(213 226 229 / 94%);
+
+  position: relative;
   display: grid;
-  min-height: 160px;
   grid-template-columns: 1fr 168px;
-  align-items: center;
   gap: 24px;
+  align-items: center;
+  min-height: 160px;
   padding: 24px;
-  border: 2px dashed var(--ink);
-  background: rgb(213 226 229 / 94%);
+  border: 0;
+  background: var(--card-bg);
+
+  box-shadow:
+    calc(var(--px) * -1) 0 0 0 var(--ink),
+    var(--px) 0 0 0 var(--ink),
+    0 calc(var(--px) * -1) 0 0 var(--ink),
+    0 var(--px) 0 0 var(--ink);
+
   opacity: 0;
   transform: translateY(24px);
   transition-property: opacity, transform, box-shadow;
   transition-duration: 420ms;
-  box-shadow: var(--hard-shadow);
 }
 
-[data-theme="dark"] .card { background: rgb(23 42 56 / 94%); }
+/* Outer frame */
+.card::before {
+  content: "";
+  position: absolute;
+  inset: calc(var(--gap) * -1 - var(--px));
+  border: var(--px) solid var(--drizzle);
+  pointer-events: none;
+}
+
+/* Pixel corners on the outer frame */
+.card::after {
+  content: "";
+  position: absolute;
+  inset: calc(var(--gap) * -1 - var(--px) - 2px);
+  background:
+    linear-gradient(var(--ink), var(--ink)) top left / var(--chip) var(--chip) no-repeat,
+    linear-gradient(var(--ink), var(--ink)) top right / var(--chip) var(--chip) no-repeat,
+    linear-gradient(var(--ink), var(--ink)) bottom left / var(--chip) var(--chip) no-repeat,
+    linear-gradient(var(--ink), var(--ink)) bottom right / var(--chip) var(--chip) no-repeat;
+  pointer-events: none;
+}
+
+[data-theme="dark"] .card { --card-bg: rgb(23 42 56 / 94%); }
 .card:nth-child(even) { translate: 50px 0; }
 .card.in { opacity: 1; transform: none; }
 .card.in:hover { transform: translate(2px, 2px); transition-duration: 140ms; }
@@ -379,17 +413,39 @@ main {
 
 .thumb {
   aspect-ratio: 16 / 9;
-  border: var(--border);
+  border: 0;
   background: url("../assets/images/watermist-background-transparent.png") no-repeat;
   background-color: var(--drizzle);
   background-size: 500% auto;
   image-rendering: pixelated;
+  box-shadow:
+    -2px 0 0 0 var(--ink),
+    2px 0 0 0 var(--ink),
+    0 -2px 0 0 var(--ink),
+    0 2px 0 0 var(--ink);
 }
 
-.t1 { background-position: 82% 62%; }
-.t2 { background-position: 12% 78%; }
-.t3 { background-position: 45% 90%; }
-.t4 { background-position: 60% 70%; }
+.t1 { 
+  background-image: url("../assets/images/deals.jpg");
+  background-position: center;
+  background-size: 140% auto; 
+}
+.t2 {
+  background-image: url("../assets/images/new-release.jpg");
+  background-position: center;
+  background-size: 135% auto; 
+}
+.t3 {
+  background-image: url("../assets/images/recomendation.jpg");
+  background-position: center;
+  background-size: 120% auto; 
+}
+.t4 {
+  background-image: url("../assets/images/hidden-gem.jpg");
+  background-position: center;
+  background-size: 155% auto; 
+}
+
 
 /* Responsive */
 @media (max-width: 1199px) {
