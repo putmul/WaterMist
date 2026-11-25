@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WaterMist — Temukan game. Bayar pas.</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../static/css/style.css">
+</head>
+<body>
+
+<div class="scene" aria-hidden="true">
+  <span class="cloud c1"></span><span class="cloud c2"></span><span class="cloud c3"></span><span class="cloud c4"></span>
+</div>
+
+<header class="topbar" id="topbar">
+  <a class="wordmark" href="#top">WATERMIST</a>
+  <nav aria-label="Navigasi utama">
+    <a href="#dashboard">Recently Released</a>
+    <a href="#dashboard">Deals</a>
+    <a href="#dashboard">Recommendations</a>
+  </nav>
+  <div class="tools">
+    <form class="search" role="search">
+      <input type="search" placeholder="Cari game..." aria-label="Cari game">
+    </form>
+    <select aria-label="Mata uang"><option>IDR</option><option>USD</option></select>
+    <select aria-label="Bahasa"><option>ID</option><option>EN</option></select>
+    <button class="btn btn-primary" type="button">Login</button>
+  </div>
+</header>
+
+<main id="top">
+  <section class="hero">
+    <h1>WATERMIST</h1>
+    <p class="tagline">Temukan Game. Bayar Sesuai Dompetmu.</p>
+    <form class="search" role="search">
+      <input type="search" placeholder="Cari game atau genre..." aria-label="Cari game atau genre">
+      <button class="btn btn-primary" type="submit">Cari</button>
+    </form>
+    <div class="cta">
+      <a class="btn btn-primary" href="#dashboard">Explore Deals →</a>
+      <a class="btn btn-secondary" href="#signup">Sign Up</a>
+    </div>
+    <p class="scroll-hint" aria-hidden="true">▼</p>
+    <p class="scroll-hint2" aria-hidden="true">▼</p>
+  </section>
+
+  <section class="dashboard" id="dashboard">
+    <div class="dashboard-grid">
+      <a class="card" href="#deals">
+        <div><h2>Deal Terbaik</h2><p>Bandingkan harga di berbagai toko untuk mendapatkan penawaran terbaik.</p><span class="link">Lihat Deals →</span></div>
+        <div class="thumb t1" role="img" aria-label="Ilustrasi kastil"></div>
+      </a>
+      <a class="card" href="#rilis">
+        <div><h2>Rilis Baru</h2><p>Temukan game yang baru dirilis dalam 30 hari terakhir.</p><span class="link">Lihat Rilis →</span></div>
+        <div class="thumb t2" role="img" aria-label="Ilustrasi musafir"></div>
+      </a>
+      <a class="card" href="#quiz">
+        <div><h2>Rekomendasi</h2><p>Dapatkan rekomendasi personal berdasarkan selera bermainmu.</p><span class="link">Mulai Quiz →</span></div>
+        <div class="thumb t3" role="img" aria-label="Ilustrasi danau berkabut"></div>
+      </a>
+      <a class="card" href="#gems">
+        <div><h2>Hidden Gems</h2><p>Temukan game-game keren yang jarang diketahui.</p><span class="link">Lihat Rekomendasi →</span></div>
+        <div class="thumb t4" role="img" aria-label="Ilustrasi pulau"></div>
+      </a>
+    </div>
+
+    <footer class="site-footer">
+      <p>© 2026 WaterMist — Temukan game. Bayar pas.</p>
+    </footer>
+  </section>
+</main>
+
+<script src="../static/js/script.js" defer></script>
+</body>
+</html>
