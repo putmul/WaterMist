@@ -28,8 +28,9 @@
         </article>{% endfor %}
       </div>{% else %}<p class="frame" style="padding:20px">Belum ada data game terbaru yang sesuai.</p>{% endif %}
       {% if pagination.pages and pagination.pages > 1 %}<nav class="pagination" aria-label="Halaman">
-        {% if pagination.has_prev %}<a class="page-btn" href="{{ url_for('releases.releases', q=q, mode=mode, per_page=per_page, page=pagination.prev_num) }}">‹</a>{% endif %}<span>Halaman {{ pagination.page }} dari {{ pagination.pages }}</span>
-        {% if pagination.has_next %}<a class="page-btn" href="{{ url_for('releases.releases', q=q, mode=mode, per_page=per_page, page=pagination.next_num) }}">›</a>{% endif %}
+        {% if pagination.has_prev %}<a class="page-btn" aria-label="Halaman sebelumnya" href="{{ url_for('releases.releases', q=q, mode=mode, per_page=per_page, page=pagination.prev_num) }}">‹</a>{% endif %}
+        {% for page_num in range([pagination.page - 2, 1]|max, [pagination.page + 2, pagination.pages]|min + 1) %}<a class="page-btn" href="{{ url_for('releases.releases', q=q, mode=mode, per_page=per_page, page=page_num) }}" {% if page_num == pagination.page %}aria-current="page" aria-label="Halaman {{ page_num }}, aktif"{% else %}aria-label="Halaman {{ page_num }}"{% endif %}>{{ page_num }}</a>{% endfor %}<span class="pagination-summary">{{ pagination.page }} / {{ pagination.pages }}</span>
+        {% if pagination.has_next %}<a class="page-btn" aria-label="Halaman berikutnya" href="{{ url_for('releases.releases', q=q, mode=mode, per_page=per_page, page=pagination.next_num) }}">›</a>{% endif %}
       </nav>{% endif %}
     </div><div data-slot="footer"></div>
   </main>

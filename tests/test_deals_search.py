@@ -117,6 +117,37 @@ class DealsSearchTests(unittest.TestCase):
         self.assertIn(safe.id, result_ids)
         self.assertNotIn(nsfw.id, result_ids)
 
+    def test_deal_listing_only_shows_one_offer_per_game(self):
+        game = self._deal("Single Listing Game")
+        store = Store(name="Another Store")
+        db.session.add(store)
+        db.session.flush()
+        product = GameProduct(
+            game_id=game.id,
+            store_id=store.id,
+            external_product_id="another-product",
+            region="ID",
+            currency="IDR",
+        )
+        db.session.add(product)
+        db.session.flush()
+        db.session.add(
+            Deal(
+                game_product_id=product.id,
+                normal_price=Decimal("200000"),
+                sale_price=Decimal("50000"),
+                discount_percent=Decimal("75"),
+                deal_url="https://example.test/another-deal",
+                source="cheapshark",
+            )
+        )
+        db.session.commit()
+
+        results = db.session.scalars(DealService().list_active_deals()).unique().all()
+
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0].game_product.game.id, game.id)
+
     def test_popularity_sort_orders_by_review_count(self):
         less_popular = self._deal("Less Popular Game")
         most_popular = self._deal("Most Popular Game")

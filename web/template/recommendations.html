@@ -8,7 +8,7 @@
   <link rel="stylesheet" href="{{ url_for('frontend.static', filename='css/watermist.css') }}">
   <script src="{{ url_for('frontend.static', filename='js/layout.js') }}"></script>
 </head>
-<body data-page="recommendations" data-recommendation-tab="popular" data-recommendation-background="popular">
+<body data-page="recommendations" data-recommendation-tab="{{ active_tab }}" data-recommendation-background="{{ 'popular' if active_tab == 'popular' else 'gems' }}">
   <div data-slot="topbar"></div>
   <main class="page"><header class="page-header container"><h1>Recommendations</h1><p>Rekomendasi game berdasarkan genre dan tag pilihanmu.</p></header>
     <div class="container page-body">
@@ -19,10 +19,10 @@
         {% if result.genres or result.tags %}<a class="btn btn-secondary" href="{{ url_for('recommendations.recommendations') }}">Reset</a>{% endif %}
       </form>
       <div class="tabs tabs--line recommendation-tabs" role="tablist" aria-label="Kategori rekomendasi">
-        <button class="tab" id="tab-popular" type="button" role="tab" aria-selected="true" aria-controls="popular" tabindex="0">Popular Picks</button>
-        <button class="tab" id="tab-gems" type="button" role="tab" aria-selected="false" aria-controls="gems" tabindex="-1">Hidden Gem</button>
+        <button class="tab" id="tab-popular" type="button" role="tab" aria-selected="{{ 'true' if active_tab == 'popular' else 'false' }}" aria-controls="popular" tabindex="{{ '0' if active_tab == 'popular' else '-1' }}">Popular Picks</button>
+        <button class="tab" id="tab-gems" type="button" role="tab" aria-selected="{{ 'true' if active_tab == 'gems' else 'false' }}" aria-controls="gems" tabindex="{{ '0' if active_tab == 'gems' else '-1' }}">Hidden Gem</button>
       </div>
-      <section id="popular" class="recommendation-panel" role="tabpanel" aria-labelledby="tab-popular" tabindex="0">
+      <section id="popular" class="recommendation-panel" role="tabpanel" aria-labelledby="tab-popular" tabindex="0" {% if active_tab != 'popular' %}hidden{% endif %}>
         <div class="rec-list">
           {% for item in result.popular %}{% set game = item.game %}
           <article class="rec frame">
@@ -34,7 +34,10 @@
           </article>{% else %}<p class="frame" style="padding:18px">Belum ada rekomendasi populer yang cocok.</p>{% endfor %}
         </div>
       </section>
-      <section id="gems" class="recommendation-panel" role="tabpanel" aria-labelledby="tab-gems" tabindex="0" hidden>
+      {% if popular_pagination.pages > 1 %}<nav class="pagination" data-recommendation-pagination="popular" aria-label="Pagination Popular Picks" {% if active_tab != 'popular' %}hidden{% endif %}>
+        {% if popular_pagination.has_prev %}<a class="page-btn" href="{{ url_for('recommendations.recommendations', genres=result.genres|join(','), tags=result.tags|join(','), popular_page=popular_pagination.prev_num, gems_page=gems_pagination.page, tab='popular') }}" aria-label="Halaman sebelumnya">‹</a>{% endif %}{% for page_num in range([popular_pagination.page - 2, 1]|max, [popular_pagination.page + 2, popular_pagination.pages]|min + 1) %}<a class="page-btn" href="{{ url_for('recommendations.recommendations', genres=result.genres|join(','), tags=result.tags|join(','), popular_page=page_num, gems_page=gems_pagination.page, tab='popular') }}" {% if page_num == popular_pagination.page %}aria-current="page"{% endif %}>{{ page_num }}</a>{% endfor %}<span class="pagination-summary">{{ popular_pagination.page }} / {{ popular_pagination.pages }}</span>{% if popular_pagination.has_next %}<a class="page-btn" href="{{ url_for('recommendations.recommendations', genres=result.genres|join(','), tags=result.tags|join(','), popular_page=popular_pagination.next_num, gems_page=gems_pagination.page, tab='popular') }}" aria-label="Halaman berikutnya">›</a>{% endif %}
+      </nav>{% endif %}
+      <section id="gems" class="recommendation-panel" role="tabpanel" aria-labelledby="tab-gems" tabindex="0" {% if active_tab != 'gems' %}hidden{% endif %}>
         <div class="rec-list">
           {% for item in result.hidden_gem %}{% set game = item.game %}
           <article class="rec frame">
@@ -46,6 +49,9 @@
           </article>{% else %}<p class="frame" style="padding:18px">Belum ada Hidden Gems yang memenuhi kriteria.</p>{% endfor %}
         </div>
       </section>
+      {% if gems_pagination.pages > 1 %}<nav class="pagination" data-recommendation-pagination="gems" aria-label="Pagination Hidden Gem" {% if active_tab != 'gems' %}hidden{% endif %}>
+        {% if gems_pagination.has_prev %}<a class="page-btn" href="{{ url_for('recommendations.recommendations', genres=result.genres|join(','), tags=result.tags|join(','), popular_page=popular_pagination.page, gems_page=gems_pagination.prev_num, tab='gems') }}" aria-label="Halaman sebelumnya">‹</a>{% endif %}{% for page_num in range([gems_pagination.page - 2, 1]|max, [gems_pagination.page + 2, gems_pagination.pages]|min + 1) %}<a class="page-btn" href="{{ url_for('recommendations.recommendations', genres=result.genres|join(','), tags=result.tags|join(','), popular_page=popular_pagination.page, gems_page=page_num, tab='gems') }}" {% if page_num == gems_pagination.page %}aria-current="page"{% endif %}>{{ page_num }}</a>{% endfor %}<span class="pagination-summary">{{ gems_pagination.page }} / {{ gems_pagination.pages }}</span>{% if gems_pagination.has_next %}<a class="page-btn" href="{{ url_for('recommendations.recommendations', genres=result.genres|join(','), tags=result.tags|join(','), popular_page=popular_pagination.page, gems_page=gems_pagination.next_num, tab='gems') }}" aria-label="Halaman berikutnya">›</a>{% endif %}
+      </nav>{% endif %}
     </div><div data-slot="footer"></div>
   </main>
   <script>
@@ -98,6 +104,9 @@
             panel.setAttribute('aria-hidden', 'true');
             panel.setAttribute('inert', '');
           }
+        });
+        document.querySelectorAll('[data-recommendation-pagination]').forEach(function (nav) {
+          nav.hidden = nav.dataset.recommendationPagination !== (index === 0 ? 'popular' : 'gems');
         });
         previousPanel.hidden = false;
         previousPanel.setAttribute('aria-hidden', 'true');

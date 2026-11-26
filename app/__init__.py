@@ -31,6 +31,10 @@ def create_app(config_object=None, start_scheduler=False):
     db.init_app(app)
     migrate.init_app(app, db)
 
+    from .utils.money import format_idr
+
+    app.jinja_env.filters["idr"] = format_idr
+
     from . import models  # noqa: F401
     from .routes.deals import deals_bp
     from .routes.frontend import frontend_bp

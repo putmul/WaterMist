@@ -1,12 +1,9 @@
 """Read-only data preparation for the game detail and deal comparison page."""
 
-from decimal import Decimal, InvalidOperation
-
-from flask import current_app
-
 from app.extensions import db
 from app.models.game import Game
 from app.services.deal_service import DealService
+from app.utils.money import to_idr
 
 
 class GameDetailService:
@@ -14,24 +11,7 @@ class GameDetailService:
 
     @staticmethod
     def _comparison_price(deal):
-        currency = (deal.game_product.currency or "").upper()
-        base_currency = current_app.config.get(
-            "PRICE_COMPARISON_CURRENCY", "IDR"
-        ).upper()
-        if currency == base_currency:
-            return Decimal(deal.sale_price).quantize(Decimal("0.01"))
-
-        rates = current_app.config.get("PRICE_EXCHANGE_RATES", {})
-        try:
-            source_rate = Decimal(str(rates.get(currency)))
-            base_rate = Decimal(str(rates.get(base_currency)))
-        except (InvalidOperation, TypeError, ValueError):
-            return None
-        if source_rate <= 0 or base_rate <= 0:
-            return None
-        return (Decimal(deal.sale_price) * source_rate / base_rate).quantize(
-            Decimal("0.01")
-        )
+        return to_idr(deal.sale_price, deal.game_product.currency)
 
     @classmethod
     def _offer(cls, deal):
@@ -44,6 +24,8 @@ class GameDetailService:
             "region": product.region,
             "normal_price": deal.normal_price,
             "sale_price": deal.sale_price,
+            "normal_price_idr": to_idr(deal.normal_price, product.currency),
+            "sale_price_idr": to_idr(deal.sale_price, product.currency),
             "discount_percent": deal.discount_percent,
             "comparison_price": cls._comparison_price(deal),
             "deal_end_date": deal.deal_end_date,
@@ -107,16 +89,13 @@ class GameDetailService:
             for offer in comparable:
                 offer["is_cheapest"] = offer["comparison_price"] == cheapest_price
 
-        base_currency = current_app.config.get(
-            "PRICE_COMPARISON_CURRENCY", "IDR"
-        ).upper()
         return {
             "game": game,
             "offers": offers,
             "cheapest_offers": [
                 offer for offer in offers if offer["is_cheapest"]
             ],
-            "comparison_currency": base_currency,
+            "comparison_currency": "IDR",
             "comparison_available": comparison_available,
             "steam_rating_percent": game.steam_rating_percent,
             "steam_rating_count": game.steam_rating_count,

@@ -51,8 +51,8 @@
             <span class="badge-best">{{ 'Harga Terbaik' if best_offer.comparison_price is not none else 'Deal Aktif' }}</span>
             <div class="price-row">
               <span class="badge">-{{ '%.0f'|format(best_offer.discount_percent) }}%</span>
-              <span class="price">{{ best_offer.currency }} {{ '%.2f'|format(best_offer.sale_price) }}</span>
-              <s class="price-old">{{ best_offer.currency }} {{ '%.2f'|format(best_offer.normal_price) }}</s>
+              <span class="price">{{ best_offer.sale_price_idr|idr if best_offer.sale_price_idr is not none else 'Konversi IDR tidak tersedia' }}</span>
+              {% if best_offer.normal_price_idr is not none %}<s class="price-old">{{ best_offer.normal_price_idr|idr }}</s>{% endif %}
             </div>
             <p class="meta">di {{ best_offer.store_name }}{% if best_offer.region %} · {{ best_offer.region }}{% endif %}</p>
             <div class="actions"><a class="btn btn-primary" href="{{ best_offer.deal_url }}" target="_blank" rel="noopener">Lihat deal</a></div>
@@ -64,16 +64,15 @@
       <section aria-labelledby="h-stores">
         <h2 class="section-title" id="h-stores">Bandingkan Harga</h2>
         {% if offers %}
-        {% if cheapest_offers %}<p class="meta">Harga termurah: {{ cheapest_offers[0].store_name }} — {{ comparison_currency }} {{ '%.2f'|format(cheapest_offers[0].comparison_price) }}</p>{% endif %}
+        {% if cheapest_offers %}<p class="meta">Harga termurah: {{ cheapest_offers[0].store_name }} — {{ cheapest_offers[0].comparison_price|idr }}</p>{% endif %}
         <div class="table-wrap frame"><table class="stores">
-          <thead><tr><th>Toko</th><th>Harga</th><th>Diskon</th><th>Harga Normal</th><th>Perbandingan ({{ comparison_currency }})</th><th><span class="sr-only">Aksi</span></th></tr></thead>
+          <thead><tr><th>Toko</th><th>Harga (IDR)</th><th>Diskon</th><th>Harga Normal (IDR)</th><th><span class="sr-only">Aksi</span></th></tr></thead>
           <tbody>{% for offer in offers %}
             <tr{% if offer.is_cheapest %} class="is-best"{% endif %}>
-              <td class="store">{{ offer.store_name }}{% if offer.is_cheapest %} <span class="badge-best">Termurah</span>{% endif %}<br><small>{{ offer.currency }} · {{ offer.region }}</small></td>
-              <td class="price">{{ offer.currency }} {{ '%.2f'|format(offer.sale_price) }}</td>
+              <td class="store">{{ offer.store_name }}{% if offer.is_cheapest %} <span class="badge-best">Termurah</span>{% endif %}<br><small>{{ offer.region }}</small></td>
+              <td class="price">{{ offer.sale_price_idr|idr if offer.sale_price_idr is not none else 'Tidak tersedia' }}</td>
               <td><span class="badge">-{{ '%.0f'|format(offer.discount_percent) }}%</span></td>
-              <td><s class="price-old">{{ offer.currency }} {{ '%.2f'|format(offer.normal_price) }}</s></td>
-              <td>{% if offer.comparison_price is not none %}{{ comparison_currency }} {{ '%.2f'|format(offer.comparison_price) }}{% else %}<span class="meta">Tidak tersedia</span>{% endif %}</td>
+              <td><s class="price-old">{{ offer.normal_price_idr|idr if offer.normal_price_idr is not none else 'Tidak tersedia' }}</s></td>
               <td><a class="btn {{ 'btn-primary' if offer.is_cheapest else 'btn-secondary' }}" href="{{ offer.deal_url }}" target="_blank" rel="noopener">Lihat deal</a></td>
             </tr>
           {% endfor %}</tbody>

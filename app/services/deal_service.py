@@ -45,6 +45,21 @@ class DealService:
         # Reused only during one service instance / sync batch.
         self._game_name_cache = None
 
+    @staticmethod
+    def _idr_price_expression():
+        rates = current_app.config.get("PRICE_EXCHANGE_RATES", {})
+        idr_rate = Decimal(str(rates.get("IDR", 1)))
+        converted = {
+            str(currency).upper(): Deal.sale_price * (Decimal(str(rate)) / idr_rate)
+            for currency, rate in rates.items()
+            if rate and idr_rate
+        }
+        return case(
+            converted,
+            value=func.upper(GameProduct.currency),
+            else_=None,
+        )
+
     def sync_daily(self, steam_collector=None, cheapshark_client=None):
         """Run both sources while keeping each source isolated on failure."""
         self._game_name_cache = {
@@ -441,16 +456,35 @@ class DealService:
             stmt = stmt.where(Deal.discount_percent >= filters["min_discount"])
         if filters.get("max_discount") is not None:
             stmt = stmt.where(Deal.discount_percent <= filters["max_discount"])
+        idr_price = self._idr_price_expression()
         if filters.get("min_price") is not None:
-            stmt = stmt.where(Deal.sale_price >= filters["min_price"])
+            stmt = stmt.where(idr_price.is_not(None), idr_price >= filters["min_price"])
         if filters.get("max_price") is not None:
-            stmt = stmt.where(Deal.sale_price <= filters["max_price"])
+            stmt = stmt.where(idr_price.is_not(None), idr_price <= filters["max_price"])
         if filters.get("currency"):
             stmt = stmt.where(GameProduct.currency == filters["currency"])
 
+        # Keep one representative offer per game in listing/search results;
+        # the detail page still exposes all active store offers.
+        game_rank = func.row_number().over(
+            partition_by=Game.id,
+            order_by=(
+                idr_price.is_(None).asc(),
+                idr_price.asc(),
+                case((Deal.source == "steam_scraper", 0), else_=1),
+                Deal.id.asc(),
+            ),
+        ).label("game_rank")
+        ranked_ids = stmt.with_only_columns(Deal.id, game_rank).order_by(None).subquery()
+        stmt = stmt.where(
+            Deal.id.in_(
+                db.select(ranked_ids.c.id).where(ranked_ids.c.game_rank == 1)
+            )
+        )
+
         sort = filters.get("sort", "discount")
         if sort == "price":
-            stmt = stmt.order_by(Deal.sale_price.asc(), Game.name.asc())
+            stmt = stmt.order_by(idr_price.is_(None).asc(), idr_price.asc(), Game.name.asc())
         elif sort == "name":
             stmt = stmt.order_by(Game.name.asc(), Deal.sale_price.asc())
         elif sort == "store":

@@ -3,6 +3,7 @@ from flask import Blueprint, flash, redirect, render_template, request, url_for
 from app.auth import current_user
 from app.models import Game
 from app.services.recommendation_service import RecommendationService
+from app.services.semantic_search_service import SemanticSearchService
 
 recommendations_bp = Blueprint(
     "recommendations", __name__, url_prefix="/recommendations"
@@ -15,31 +16,27 @@ def recommendations():
     genres = _query_values("genres")
     tags = _query_values("tags")
     service = RecommendationService()
-
-    if user is not None and not (genres or tags):
-        run = service.latest_for_user(user)
-        popular = [
-            recommendation
-            for recommendation in run.recommendations
-            if recommendation.recommendation_type == "popular"
-        ]
-        hidden = [
-            recommendation
-            for recommendation in run.recommendations
-            if recommendation.recommendation_type == "hidden_gem"
-        ]
-        result = {
-            "mode": user.preference_mode,
-            "popular": popular,
-            "hidden_gem": hidden,
-            "genres": [],
-            "tags": [],
-        }
-    else:
-        result = service.recommend(
-            user=user, genres=genres, tags=tags, limit=12
-        )
-    return render_template("recommendations.html", result=result, user=user)
+    result = service.recommend(user=user, genres=genres, tags=tags, limit=60)
+    page_size = 12
+    popular_pagination = SemanticSearchService.paginate(
+        result["popular"], max(request.args.get("popular_page", 1, type=int), 1), page_size
+    )
+    gems_pagination = SemanticSearchService.paginate(
+        result["hidden_gem"], max(request.args.get("gems_page", 1, type=int), 1), page_size
+    )
+    active_tab = request.args.get("tab", "popular")
+    if active_tab not in {"popular", "gems"}:
+        active_tab = "popular"
+    result["popular"] = popular_pagination.items
+    result["hidden_gem"] = gems_pagination.items
+    return render_template(
+        "recommendations.html",
+        result=result,
+        user=user,
+        popular_pagination=popular_pagination,
+        gems_pagination=gems_pagination,
+        active_tab=active_tab,
+    )
 
 
 @recommendations_bp.post("/interactions")

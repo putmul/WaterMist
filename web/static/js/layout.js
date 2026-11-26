@@ -50,10 +50,9 @@
       '<a class="wordmark" href="/">WATERMIST</a>' +
       '<nav aria-label="Navigasi utama">' + links + '</nav>' +
       '<div class="tools">' +
-        '<form class="search" role="search" action="/deals" method="get">' +
-          '<input name="q" type="search" placeholder="Cari game..." aria-label="Cari game"></form>' +
-        '<select aria-label="Mata uang"><option>IDR</option><option>USD</option></select>' +
-        '<select aria-label="Bahasa"><option>ID</option><option>EN</option></select>' +
+        (['new-releases', 'deals', 'recommendations'].indexOf(page) === -1 ?
+          '<form class="search" role="search" action="/deals" method="get">' +
+          '<input name="q" type="search" placeholder="Cari game..." aria-label="Cari game"></form>' : '') +
         '<button class="btn btn-secondary theme-toggle" type="button" aria-pressed="false">Gelap</button>' +
         '<button class="btn btn-primary" type="button">Login</button>' +
       '</div></header>';

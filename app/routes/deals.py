@@ -27,19 +27,12 @@ def _search_context():
     """Build one consistent search context for page and semantic requests."""
     query = request.args.get("q", "").strip()[:100]
     sort = request.args.get("sort", "relevance" if query else "discount")
-    if sort not in {
-        "relevance",
-        "discount",
-        "price",
-        "name",
-        "store",
-        "popularity",
-    }:
-        sort = "relevance" if query else "discount"
+    if sort not in {"discount", "price", "popularity"}:
+        sort = "discount"
 
     filters = {
         "q": query,
-        "store": request.args.get("store", "").strip()[:100],
+        "store": "",
         "min_discount": _decimal_arg("min_discount"),
         "max_discount": _decimal_arg("max_discount"),
         "min_price": _decimal_arg("min_price"),

@@ -786,6 +786,10 @@ body[data-page="recommendations"][data-recommendation-background-next="gems"] {
 
 /* ===== Pagination ===== */
 .pagination { display: flex; justify-content: center; align-items: center; gap: 8px; }
+.pagination[hidden] { display: none; }
+.deals-filters { display: flex; flex-wrap: wrap; gap: 12px; padding: 20px; margin-bottom: 28px; }
+.deals-filters .input[type="search"] { flex: 1 1 240px; }
+.pagination-summary { align-self: center; padding: 0 8px; color: var(--overcast); font-size: 14px; white-space: nowrap; }
 .page-btn {
   min-width: 44px; height: 44px; border: var(--border); background: var(--fog);
   color: var(--ink); font-family: var(--font-body); font-size: 16px; cursor: pointer;
