@@ -94,7 +94,7 @@ class GameDetailComparisonTests(unittest.TestCase):
         self.assertIn(b"Publisher A", response.data)
         self.assertIn(b"Action", response.data)
         self.assertIn(b"Harga termurah", response.data)
-        self.assertIn(b"detail.css", response.data)
+        self.assertIn(b"watermist.css", response.data)
         self.assertNotIn(b"Hollow Knight", response.data)
         self.assertNotIn(b"Old Store", response.data)
 

@@ -7,13 +7,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="{{ url_for('frontend.static', filename='css/style.css') }}">
-  <link rel="stylesheet" href="{{ url_for('frontend.static', filename='css/pages.css') }}">
-  <link rel="stylesheet" href="{{ url_for('frontend.static', filename='css/detail.css') }}">
+  <link rel="stylesheet" href="{{ url_for('frontend.static', filename='css/watermist.css') }}">
   <script src="{{ url_for('frontend.static', filename='js/layout.js') }}"></script>
 </head>
 <body data-page="game-detail">
-  <div class="scene" aria-hidden="true"><span class="cloud c1"></span><span class="cloud c2"></span><span class="cloud c3"></span><span class="cloud c4"></span></div>
   <div data-slot="topbar"></div>
 
   <main class="page">
@@ -84,7 +81,7 @@
           <h2>Riwayat Harga ({{ comparison_currency }})</h2>
           {% if history_data.history %}
           <div class="bars" role="img" aria-label="Riwayat harga bulanan selama 12 bulan terakhir">
-            {% for point in history_data.history %}<div class="bar{% if point.is_low %} low{% endif %}" style="--h:{{ point.height }}%" title="{{ point.label }}{% if point.price is not none %}: {{ comparison_currency }} {{ '%.2f'|format(point.price) }}{% else %}: Tidak ada data{% endif %}"></div>{% endfor %}
+            {% for point in history_data.history %}<div class="bar{% if point.is_low %} low{% endif %}" data-height="{{ point.height }}" title="{{ point.label }}{% if point.price is not none %}: {{ comparison_currency }} {{ '%.2f'|format(point.price) }}{% else %}: Tidak ada data{% endif %}"></div>{% endfor %}
           </div>
           <div class="bar-labels" aria-hidden="true">{% for point in history_data.history %}<span>{{ point.label }}</span>{% endfor %}</div>
           <div class="stats">
@@ -102,5 +99,10 @@
     </div>
     <div data-slot="footer"></div>
   </main>
+  <script>
+    document.querySelectorAll('.bar[data-height]').forEach(function (bar) {
+      bar.style.setProperty('--h', bar.dataset.height + '%');
+    });
+  </script>
 </body>
 </html>
