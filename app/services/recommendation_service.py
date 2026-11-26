@@ -3,6 +3,7 @@
 import logging
 
 from flask import current_app
+from sqlalchemy.orm import selectinload
 
 from app.extensions import db
 from app.models import (
@@ -50,7 +51,11 @@ class RecommendationService:
             dismissed_ids = []
 
         ranked = rank_games(
-            list(candidates) if candidates is not None else Game.query.all(),
+            list(candidates)
+            if candidates is not None
+            else Game.query.options(
+                selectinload(Game.genres), selectinload(Game.tags)
+            ).all(),
             profile,
             owned_game_ids=owned_ids,
             dismissed_game_ids=dismissed_ids,

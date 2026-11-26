@@ -70,6 +70,25 @@ class DealsSearchTests(unittest.TestCase):
         self.assertEqual(results[0].game_product.game.id, exact.id)
         self.assertEqual(len(results), 3)
 
+    def test_literal_search_paginates_in_database_and_returns_all_matching_ids(self):
+        first = self._deal("Final Fantasy")
+        second = self._deal("Final Fantasy XVI")
+        third = self._deal("The Final Fantasy Collection")
+        db.session.commit()
+
+        service = DealService()
+        page = service.paginate_search_by_name(
+            {"q": "Final Fantasy", "sort": "relevance"}, page=2, per_page=1
+        )
+
+        self.assertEqual(page.total, 3)
+        self.assertEqual(page.page, 2)
+        self.assertEqual(len(page.items), 1)
+        self.assertEqual(
+            set(service.literal_game_ids({"q": "Final Fantasy", "sort": "relevance"})),
+            {first.id, second.id, third.id},
+        )
+
     def test_deals_page_renders_literal_section_without_semantic_blocking(self):
         self._deal("Final Fantasy XVI")
         db.session.commit()

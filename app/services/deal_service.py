@@ -4,8 +4,8 @@ import logging
 from decimal import Decimal
 
 from flask import current_app
-from sqlalchemy import and_, func, not_, or_
-from sqlalchemy.orm import aliased
+from sqlalchemy import and_, case, func, not_, or_
+from sqlalchemy.orm import aliased, joinedload
 
 from app.collectors.cheapshark_client import CheapSharkClient
 from app.collectors.steam_scraper import SteamDealsCollector
@@ -41,8 +41,17 @@ def validate_deal_record(record):
 class DealService:
     job_name = "game_deals_daily"
 
+    def __init__(self):
+        # Reused only during one service instance / sync batch.
+        self._game_name_cache = None
+
     def sync_daily(self, steam_collector=None, cheapshark_client=None):
         """Run both sources while keeping each source isolated on failure."""
+        self._game_name_cache = {
+            normalize_game_name(name): game_id
+            for game_id, name in db.session.query(Game.id, Game.name).all()
+            if normalize_game_name(name)
+        }
         job_run = JobRun(job_name=self.job_name, status="running")
         db.session.add(job_run)
         db.session.commit()
@@ -205,8 +214,16 @@ class DealService:
             return product.game
 
         normalized_name = normalize_game_name(record["name"])
-        for game in Game.query.all():
-            if normalize_game_name(game.name) == normalized_name:
+        if self._game_name_cache is None:
+            self._game_name_cache = {
+                normalize_game_name(name): game_id
+                for game_id, name in db.session.query(Game.id, Game.name).all()
+                if normalize_game_name(name)
+            }
+        cached_id = self._game_name_cache.get(normalized_name)
+        if cached_id is not None:
+            game = db.session.get(Game, cached_id)
+            if game is not None:
                 return game
 
         if record["source"] == "cheapshark" and normalized_name:
@@ -231,6 +248,8 @@ class DealService:
         game = Game(name=record["name"], steam_app_id=record.get("steam_app_id"))
         db.session.add(game)
         db.session.flush()
+        if normalized_name:
+            self._game_name_cache[normalized_name] = game.id
         return game
 
     def _upsert_record(self, record, cheapshark_client):
@@ -363,6 +382,10 @@ class DealService:
             .join(GameProduct.game)
             .join(GameProduct.store)
             .where(Deal.is_active.is_(True))
+            .options(
+                joinedload(Deal.game_product).joinedload(GameProduct.game),
+                joinedload(Deal.game_product).joinedload(GameProduct.store),
+            )
         )
         steam_deal = aliased(Deal)
         steam_product = aliased(GameProduct)
@@ -451,44 +474,67 @@ class DealService:
         if not query:
             return []
 
-        deals = db.session.scalars(self.list_active_deals(filters)).unique().all()
-        if not deals:
+        stmt = self._literal_search_statement(filters)
+        return db.session.scalars(stmt).unique().all()
+
+    def _literal_search_statement(self, filters):
+        query = (filters.get("q") or "").strip()
+        stmt = self.list_active_deals(filters)
+        has_matches = db.session.execute(
+            stmt.order_by(None).limit(1)
+        ).first()
+        if not has_matches:
             tokens = tuple(dict.fromkeys(query.split()))
             if len(tokens) > 1:
                 token_filters = dict(filters)
                 token_filters["q"] = ""
                 token_filters["name_tokens"] = tokens
-                deals = db.session.scalars(
-                    self.list_active_deals(token_filters)
-                ).unique().all()
+                stmt = self.list_active_deals(token_filters)
 
+        name = func.lower(Game.name)
         normalized_query = query.casefold()
+        relevance = case(
+            (name == normalized_query, 0),
+            (name.like(f"{normalized_query}%"), 1),
+            (name.like(f"%{normalized_query}%"), 2),
+            else_=3,
+        )
+        sort = filters.get("sort", "relevance")
+        if sort == "price":
+            secondary = (Deal.sale_price.asc(), Game.name.asc())
+        elif sort == "discount":
+            secondary = (Deal.discount_percent.desc(), Game.name.asc())
+        elif sort == "store":
+            secondary = (func.lower(Store.name).asc(), Game.name.asc())
+        elif sort == "popularity":
+            secondary = (
+                Game.steam_rating_count.is_(None),
+                Game.steam_rating_count.desc(),
+                Game.name.asc(),
+            )
+        else:
+            secondary = (Game.name.asc(), Deal.sale_price.asc())
+        return stmt.order_by(None).order_by(relevance, *secondary)
 
-        def name_rank(deal):
-            name = deal.game_product.game.name.casefold()
-            if name == normalized_query:
-                relevance = 0
-            elif name.startswith(normalized_query):
-                relevance = 1
-            elif normalized_query in name:
-                relevance = 2
-            else:
-                relevance = 3
+    def paginate_search_by_name(self, filters, page, per_page):
+        stmt = self._literal_search_statement(filters)
+        total = db.session.scalar(
+            db.select(func.count()).select_from(stmt.order_by(None).subquery())
+        ) or 0
+        pages = max((total + per_page - 1) // per_page, 1)
+        page = min(max(page, 1), pages)
+        items = db.session.scalars(
+            stmt.offset((page - 1) * per_page).limit(per_page)
+        ).unique().all()
+        from app.services.semantic_search_service import SearchPagination
 
-            sort = filters.get("sort", "relevance")
-            if sort == "price":
-                secondary = (float(deal.sale_price or 0), name)
-            elif sort == "discount":
-                secondary = (-float(deal.discount_percent or 0), name)
-            elif sort == "store":
-                secondary = (deal.game_product.store.name.casefold(), name)
-            elif sort == "popularity":
-                secondary = (-int(deal.game_product.game.steam_rating_count or 0), name)
-            else:
-                secondary = (name, float(deal.sale_price or 0))
-            return (relevance, *secondary)
+        return SearchPagination(items, page, per_page, total)
 
-        return sorted(deals, key=name_rank)
+    def literal_game_ids(self, filters):
+        stmt = self._literal_search_statement(filters)
+        return db.session.scalars(
+            stmt.with_only_columns(Game.id).distinct().order_by(None)
+        ).unique().all()
 
     @staticmethod
     def stores_with_active_deals():

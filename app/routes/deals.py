@@ -110,13 +110,14 @@ def deals():
     filters, search_filters, intent = _search_context()
 
     if filters["q"]:
-        literal_deals = DealService().search_by_name(search_filters)
-        pagination = SemanticSearchService.paginate(literal_deals, page, per_page)
-        literal_game_ids = sorted(
-            {deal.game_product.game.id for deal in literal_deals}
+        deal_service = DealService()
+        pagination = deal_service.paginate_search_by_name(
+            search_filters, page, per_page
         )
+        literal_game_ids = sorted(deal_service.literal_game_ids(search_filters))
+        literal_deals_found = pagination.total > 0
     else:
-        literal_deals = None
+        literal_deals_found = False
         literal_game_ids = []
         pagination = db.paginate(
             DealService().list_active_deals(search_filters),
@@ -134,7 +135,7 @@ def deals():
         updated_at=DealService.last_updated(),
         semantic_mode=False,
         semantic_intent=intent,
-        literal_deals_found=bool(literal_deals),
+        literal_deals_found=literal_deals_found,
         semantic_config=semantic_config,
         page=page,
         **filters,

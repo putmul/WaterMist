@@ -24,8 +24,14 @@
       </nav>
 
       <section class="detail-hero">
-        <div class="media frame">
-          {% if game.cover_image %}<img class="cover" src="{{ game.cover_image }}" alt="Cover {{ game.name }}">{% else %}<div class="cover" role="img" aria-label="Cover belum tersedia"></div>{% endif %}
+        <div class="detail-media-column">
+          <div class="media frame">
+            {% if game.cover_image %}<img class="cover" src="{{ game.cover_image }}" alt="Cover {{ game.name }}">{% else %}<div class="cover" role="img" aria-label="Cover belum tersedia"></div>{% endif %}
+          </div>
+          <section class="game-about panel frame" aria-labelledby="about-game-title">
+            <h2 id="about-game-title">Tentang Game</h2>
+            {% if game.description %}<p>{{ game.description }}</p>{% else %}<p class="meta">Deskripsi belum tersedia.</p>{% endif %}
+          </section>
         </div>
         <div class="summary frame">
           <h1>{{ game.name }}</h1>
@@ -76,33 +82,8 @@
         {% else %}<p class="frame" style="padding:20px">Saat ini tidak ada diskon aktif untuk game ini.</p>{% endif %}
       </section>
 
-      <section class="split" aria-label="Riwayat harga">
-        <div class="panel frame">
-          <h2>Riwayat Harga ({{ comparison_currency }})</h2>
-          {% if history_data.history %}
-          <div class="bars" role="img" aria-label="Riwayat harga bulanan selama 12 bulan terakhir">
-            {% for point in history_data.history %}<div class="bar{% if point.is_low %} low{% endif %}" data-height="{{ point.height }}" title="{{ point.label }}{% if point.price is not none %}: {{ comparison_currency }} {{ '%.2f'|format(point.price) }}{% else %}: Tidak ada data{% endif %}"></div>{% endfor %}
-          </div>
-          <div class="bar-labels" aria-hidden="true">{% for point in history_data.history %}<span>{{ point.label }}</span>{% endfor %}</div>
-          <div class="stats">
-            <p>Terendah<strong>{{ comparison_currency }} {{ '%.2f'|format(history_data.history_low) }}</strong></p>
-            <p>Rata-rata<strong>{{ comparison_currency }} {{ '%.2f'|format(history_data.history_average) }}</strong></p>
-            <p>Terbaru<strong>{{ comparison_currency }} {{ '%.2f'|format(history_data.history_current) }}</strong></p>
-          </div>
-          {% else %}<p class="meta">Riwayat harga belum tersedia.</p>{% endif %}
-        </div>
-        <div class="panel frame">
-          <h2>Tentang Game</h2>
-          {% if game.description %}<p>{{ game.description }}</p>{% else %}<p class="meta">Deskripsi belum tersedia.</p>{% endif %}
-        </div>
-      </section>
     </div>
     <div data-slot="footer"></div>
   </main>
-  <script>
-    document.querySelectorAll('.bar[data-height]').forEach(function (bar) {
-      bar.style.setProperty('--h', bar.dataset.height + '%');
-    });
-  </script>
 </body>
 </html>

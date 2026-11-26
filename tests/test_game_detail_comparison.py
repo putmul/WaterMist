@@ -1,10 +1,9 @@
 import unittest
-from datetime import date
 from decimal import Decimal
 
 from app import create_app
 from app.extensions import db
-from app.models import Deal, Game, GameProduct, GameTag, PriceHistory, Store
+from app.models import Deal, Game, GameProduct, GameTag, Store
 from app.services.game_detail_service import GameDetailService
 
 
@@ -98,27 +97,18 @@ class GameDetailComparisonTests(unittest.TestCase):
         self.assertNotIn(b"Hollow Knight", response.data)
         self.assertNotIn(b"Old Store", response.data)
 
-    def test_detail_renders_database_price_history(self):
-        self.add_offer("Steam", "180000")
-        db.session.flush()
-        product = GameProduct.query.filter_by(game_id=self.game.id).one()
-        db.session.add(
-            PriceHistory(
-                game_product_id=product.id,
-                price=Decimal("150000"),
-                regular_price=Decimal("300000"),
-                currency="IDR",
-                recorded_date=date.today(),
-                source="steam_scraper",
-            )
-        )
+    def test_detail_places_about_below_cover_and_omits_price_history(self):
+        self.game.cover_image = "https://example.test/comparison-game.jpg"
         db.session.commit()
 
         response = self.app.test_client().get(f"/games/{self.game.id}")
 
         self.assertEqual(response.status_code, 200)
-        self.assertIn(b"Riwayat Harga", response.data)
-        self.assertIn(b"IDR 150000.00", response.data)
+        cover_position = response.data.index(b'alt="Cover Comparison Game"')
+        about_position = response.data.index(b'class="game-about panel frame"')
+        self.assertLess(cover_position, about_position)
+        self.assertIn(b"A short game description.", response.data)
+        self.assertNotIn(b"Riwayat Harga", response.data)
 
     def test_unknown_game_returns_not_found(self):
         response = self.app.test_client().get("/games/99999")

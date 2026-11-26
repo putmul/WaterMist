@@ -5,28 +5,12 @@ from decimal import Decimal, InvalidOperation
 from flask import current_app
 
 from app.extensions import db
-from app.models.game import Game, GameProduct, PriceHistory
+from app.models.game import Game
 from app.services.deal_service import DealService
-from app.utils.time import local_today
 
 
 class GameDetailService:
     """Build a game detail view from the locally persisted data."""
-
-    @staticmethod
-    def _convert_price(amount, currency, base_currency):
-        currency = (currency or "").upper()
-        if currency == base_currency:
-            return Decimal(amount).quantize(Decimal("0.01"))
-        rates = current_app.config.get("PRICE_EXCHANGE_RATES", {})
-        try:
-            source_rate = Decimal(str(rates.get(currency)))
-            base_rate = Decimal(str(rates.get(base_currency)))
-        except (InvalidOperation, TypeError, ValueError):
-            return None
-        if source_rate <= 0 or base_rate <= 0:
-            return None
-        return (Decimal(amount) * source_rate / base_rate).quantize(Decimal("0.01"))
 
     @staticmethod
     def _comparison_price(deal):
@@ -48,57 +32,6 @@ class GameDetailService:
         return (Decimal(deal.sale_price) * source_rate / base_rate).quantize(
             Decimal("0.01")
         )
-
-    @classmethod
-    def _price_history(cls, game_id, base_currency):
-        rows = (
-            db.session.query(PriceHistory, GameProduct.currency)
-            .join(GameProduct, PriceHistory.game_product_id == GameProduct.id)
-            .filter(GameProduct.game_id == game_id)
-            .order_by(PriceHistory.recorded_date.asc())
-            .all()
-        )
-        today = local_today()
-        months = []
-        year, month = today.year, today.month
-        for _ in range(12):
-            months.append((year, month))
-            month -= 1
-            if month == 0:
-                year -= 1
-                month = 12
-        months.reverse()
-
-        prices_by_month = {key: [] for key in months}
-        for snapshot, currency in rows:
-            key = (snapshot.recorded_date.year, snapshot.recorded_date.month)
-            if key not in prices_by_month:
-                continue
-            converted = cls._convert_price(snapshot.price, currency, base_currency)
-            if converted is not None:
-                prices_by_month[key].append(converted)
-
-        monthly_prices = [min(values) for values in prices_by_month.values() if values]
-        if not monthly_prices:
-            return {"history": [], "history_low": None, "history_average": None, "history_current": None}
-
-        low = min(monthly_prices)
-        highest = max(monthly_prices)
-        history = []
-        for (year, month), values in prices_by_month.items():
-            price = min(values) if values else None
-            history.append({
-                "label": f"{month:02d}/{str(year)[-2:]}",
-                "price": price,
-                "height": max(8, int(price / highest * 100)) if price is not None and highest else 8,
-                "is_low": price == low,
-            })
-        return {
-            "history": history,
-            "history_low": low,
-            "history_average": (sum(monthly_prices) / len(monthly_prices)).quantize(Decimal("0.01")),
-            "history_current": next((point["price"] for point in reversed(history) if point["price"] is not None), None),
-        }
 
     @classmethod
     def _offer(cls, deal):
@@ -177,7 +110,6 @@ class GameDetailService:
         base_currency = current_app.config.get(
             "PRICE_COMPARISON_CURRENCY", "IDR"
         ).upper()
-        history_data = cls._price_history(game_id, base_currency)
         return {
             "game": game,
             "offers": offers,
@@ -186,7 +118,6 @@ class GameDetailService:
             ],
             "comparison_currency": base_currency,
             "comparison_available": comparison_available,
-            "history_data": history_data,
             "steam_rating_percent": game.steam_rating_percent,
             "steam_rating_count": game.steam_rating_count,
         }

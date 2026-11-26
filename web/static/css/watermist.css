@@ -829,6 +829,7 @@ body[data-page="recommendations"][data-recommendation-background-next="gems"] {
 
 /* ===== Hero ===== */
 .detail-hero { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 48px; align-items: start; }
+.detail-media-column { display: grid; min-width: 0; gap: 32px; align-content: start; }
 .media { display: grid; gap: 16px; padding: 16px; }
 .shots { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
 
@@ -863,29 +864,11 @@ body[data-page="recommendations"][data-recommendation-background-next="gems"] {
 .stores tr.is-best td { background: var(--fog); }
 .stores .btn { padding: 8px 16px; font-size: 14px; white-space: nowrap; }
 
-/* ===== Riwayat harga + alert ===== */
-.split { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 48px; align-items: start; }
 .panel { padding: 24px; }
 .panel h2 { margin-bottom: 16px; font-size: 24px; }
-.bars { display: flex; align-items: flex-end; gap: 8px; height: 180px; padding-bottom: 2px; border-bottom: var(--border); }
-.bar { flex: 1; height: var(--h); background: var(--tide); }
-.bar.low { background: var(--lantern); }
-.bar-labels { display: flex; gap: 8px; margin-top: 8px; font-size: 12px; color: var(--overcast); }
-.bar-labels span { flex: 1; text-align: center; }
-.stats { display: flex; flex-wrap: wrap; gap: 24px; margin-top: 16px; font-size: 14px; }
-.stats strong { display: block; font-size: 18px; }
-
-.alert-form { display: grid; gap: 12px; }
-.alert-form label { font-weight: 600; }
-.alert-form p { color: var(--overcast); font-size: 14px; }
-
-/* ===== Tentang + spesifikasi ===== */
-.about { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 48px; align-items: start; }
-.about p + p { margin-top: 12px; }
-.specs { display: grid; grid-template-columns: auto 1fr; gap: 8px 16px; font-size: 14px; }
-.specs dt { color: var(--overcast); }
+.game-about { display: grid; gap: 12px; }
 
 /* ===== Responsive ===== */
 @media (max-width: 1023px) {
-  .detail-hero, .split, .about { grid-template-columns: 1fr; gap: 40px; }
+  .detail-hero { grid-template-columns: 1fr; gap: 40px; }
 }
