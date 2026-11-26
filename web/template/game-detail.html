@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ game.name }} — WaterMist</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('frontend.static', filename='css/style.css') }}">
+  <link rel="stylesheet" href="{{ url_for('frontend.static', filename='css/pages.css') }}">
+  <link rel="stylesheet" href="{{ url_for('frontend.static', filename='css/detail.css') }}">
+  <script src="{{ url_for('frontend.static', filename='js/layout.js') }}"></script>
+</head>
+<body data-page="game-detail">
+  <div class="scene" aria-hidden="true"><span class="cloud c1"></span><span class="cloud c2"></span><span class="cloud c3"></span><span class="cloud c4"></span></div>
+  <div data-slot="topbar"></div>
+
+  <main class="page">
+    <div class="container page-body detail">
+      <nav aria-label="Breadcrumb">
+        <ol class="breadcrumb">
+          <li><a href="{{ url_for('main.dashboard') }}">Home</a></li>
+          <li><a href="{{ url_for('deals.deals') }}">Deals</a></li>
+          <li aria-current="page">{{ game.name }}</li>
+        </ol>
+      </nav>
+
+      <section class="detail-hero">
+        <div class="media frame">
+          {% if game.cover_image %}<img class="cover" src="{{ game.cover_image }}" alt="Cover {{ game.name }}">{% else %}<div class="cover" role="img" aria-label="Cover belum tersedia"></div>{% endif %}
+        </div>
+        <div class="summary frame">
+          <h1>{{ game.name }}</h1>
+          {% if game.tags %}<ul class="tags" aria-label="Tag game">{% for tag in game.tags %}<li class="tag">{{ tag.tag }}</li>{% endfor %}</ul>{% endif %}
+          {% if steam_rating_percent is not none %}
+          <p class="rating"><strong>{{ steam_rating_percent }}%</strong><span>{{ game.steam_rating_text or 'Ulasan Steam' }}{% if steam_rating_count %} · {{ '{:,}'.format(steam_rating_count).replace(',', '.') }} ulasan{% endif %}</span></p>
+          {% endif %}
+          <dl class="facts">
+            <dt>Developer</dt><dd>{{ game.developer or 'Informasi belum tersedia' }}</dd>
+            <dt>Publisher</dt><dd>{{ game.publisher or 'Informasi belum tersedia' }}</dd>
+            <dt>Rilis</dt><dd>{{ game.release_date.strftime('%d %b %Y') if game.release_date else 'Informasi belum tersedia' }}</dd>
+          </dl>
+
+          {% set best_offer = cheapest_offers[0] if cheapest_offers else (offers[0] if offers else none) %}
+          {% if best_offer %}
+          <div class="best-box">
+            <span class="badge-best">{{ 'Harga Terbaik' if best_offer.comparison_price is not none else 'Deal Aktif' }}</span>
+            <div class="price-row">
+              <span class="badge">-{{ '%.0f'|format(best_offer.discount_percent) }}%</span>
+              <span class="price">{{ best_offer.currency }} {{ '%.2f'|format(best_offer.sale_price) }}</span>
+              <s class="price-old">{{ best_offer.currency }} {{ '%.2f'|format(best_offer.normal_price) }}</s>
+            </div>
+            <p class="meta">di {{ best_offer.store_name }}{% if best_offer.region %} · {{ best_offer.region }}{% endif %}</p>
+            <div class="actions"><a class="btn btn-primary" href="{{ best_offer.deal_url }}" target="_blank" rel="noopener">Lihat deal</a></div>
+          </div>
+          {% else %}<p class="muted">Saat ini tidak ada diskon aktif untuk game ini.</p>{% endif %}
+        </div>
+      </section>
+
+      <section aria-labelledby="h-stores">
+        <h2 class="section-title" id="h-stores">Bandingkan Harga</h2>
+        {% if offers %}
+        {% if cheapest_offers %}<p class="meta">Harga termurah: {{ cheapest_offers[0].store_name }} — {{ comparison_currency }} {{ '%.2f'|format(cheapest_offers[0].comparison_price) }}</p>{% endif %}
+        <div class="table-wrap frame"><table class="stores">
+          <thead><tr><th>Toko</th><th>Harga</th><th>Diskon</th><th>Harga Normal</th><th>Perbandingan ({{ comparison_currency }})</th><th><span class="sr-only">Aksi</span></th></tr></thead>
+          <tbody>{% for offer in offers %}
+            <tr{% if offer.is_cheapest %} class="is-best"{% endif %}>
+              <td class="store">{{ offer.store_name }}{% if offer.is_cheapest %} <span class="badge-best">Termurah</span>{% endif %}<br><small>{{ offer.currency }} · {{ offer.region }}</small></td>
+              <td class="price">{{ offer.currency }} {{ '%.2f'|format(offer.sale_price) }}</td>
+              <td><span class="badge">-{{ '%.0f'|format(offer.discount_percent) }}%</span></td>
+              <td><s class="price-old">{{ offer.currency }} {{ '%.2f'|format(offer.normal_price) }}</s></td>
+              <td>{% if offer.comparison_price is not none %}{{ comparison_currency }} {{ '%.2f'|format(offer.comparison_price) }}{% else %}<span class="meta">Tidak tersedia</span>{% endif %}</td>
+              <td><a class="btn {{ 'btn-primary' if offer.is_cheapest else 'btn-secondary' }}" href="{{ offer.deal_url }}" target="_blank" rel="noopener">Lihat deal</a></td>
+            </tr>
+          {% endfor %}</tbody>
+        </table></div>
+        {% if offers and not comparison_available %}<p class="meta">Harga termurah belum dapat ditentukan karena nilai tukar salah satu mata uang belum tersedia.</p>{% endif %}
+        {% else %}<p class="frame" style="padding:20px">Saat ini tidak ada diskon aktif untuk game ini.</p>{% endif %}
+      </section>
+
+      <section class="split" aria-label="Riwayat harga">
+        <div class="panel frame">
+          <h2>Riwayat Harga ({{ comparison_currency }})</h2>
+          {% if history_data.history %}
+          <div class="bars" role="img" aria-label="Riwayat harga bulanan selama 12 bulan terakhir">
+            {% for point in history_data.history %}<div class="bar{% if point.is_low %} low{% endif %}" style="--h:{{ point.height }}%" title="{{ point.label }}{% if point.price is not none %}: {{ comparison_currency }} {{ '%.2f'|format(point.price) }}{% else %}: Tidak ada data{% endif %}"></div>{% endfor %}
+          </div>
+          <div class="bar-labels" aria-hidden="true">{% for point in history_data.history %}<span>{{ point.label }}</span>{% endfor %}</div>
+          <div class="stats">
+            <p>Terendah<strong>{{ comparison_currency }} {{ '%.2f'|format(history_data.history_low) }}</strong></p>
+            <p>Rata-rata<strong>{{ comparison_currency }} {{ '%.2f'|format(history_data.history_average) }}</strong></p>
+            <p>Terbaru<strong>{{ comparison_currency }} {{ '%.2f'|format(history_data.history_current) }}</strong></p>
+          </div>
+          {% else %}<p class="meta">Riwayat harga belum tersedia.</p>{% endif %}
+        </div>
+        <div class="panel frame">
+          <h2>Tentang Game</h2>
+          {% if game.description %}<p>{{ game.description }}</p>{% else %}<p class="meta">Deskripsi belum tersedia.</p>{% endif %}
+        </div>
+      </section>
+    </div>
+    <div data-slot="footer"></div>
+  </main>
+</body>
+</html>

@@ -24,7 +24,7 @@
           {% if game.cover_image %}<img class="cover" src="{{ game.cover_image }}" alt="Cover {{ game.name }}" loading="lazy">{% endif %}
           <h3>{{ game.name }}</h3><p class="meta">Rilis: {{ game.release_date or 'Tanggal tidak tersedia' }}</p>
           {% if personalized %}<p class="meta">Cocok dengan preferensimu · Fit: {{ '%.0f'|format(item.fit_score * 100) }}%</p>{% endif %}
-          {% if game.steam_app_id %}<a class="btn btn-secondary" href="https://store.steampowered.com/app/{{ game.steam_app_id }}/" target="_blank" rel="noopener">Lihat di Steam</a>{% endif %}
+          <a class="btn btn-secondary" href="{{ url_for('games.detail', game_id=game.id) }}">Lihat detail game</a>
         </article>{% endfor %}
       </div>{% else %}<p class="frame" style="padding:20px">Belum ada data game terbaru yang sesuai.</p>{% endif %}
       {% if pagination.pages and pagination.pages > 1 %}<nav class="pagination" aria-label="Halaman">

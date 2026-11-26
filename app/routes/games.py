@@ -11,4 +11,4 @@ def detail(game_id):
     view = GameDetailService.get_game_detail(game_id)
     if view is None:
         abort(404)
-    return render_template("game_detail.html", **view)
+    return render_template("game-detail.html", **view)

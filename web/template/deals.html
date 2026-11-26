@@ -36,7 +36,7 @@
           <h3><a href="{{ url_for('games.detail', game_id=game.id) }}">{{ game.name }}</a></h3>
           <p class="meta">{{ product.store.name }} · {{ product.currency }} ({{ product.region }})</p>
           <div class="price-row"><span class="badge">-{{ '%.0f'|format(deal.discount_percent) }}%</span><span class="price">{{ product.currency }} {{ '%.2f'|format(deal.sale_price) }}</span><s class="price-old">{{ product.currency }} {{ '%.2f'|format(deal.normal_price) }}</s></div>
-          <a class="btn btn-primary" href="{{ deal.deal_url }}" target="_blank" rel="noopener">Lihat deal</a>
+          <a class="btn btn-primary" href="{{ url_for('games.detail', game_id=game.id) }}">Lihat detail game</a>
         </article>
         {% endfor %}
       </div>
