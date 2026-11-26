@@ -6,7 +6,7 @@ from decimal import Decimal, InvalidOperation
 
 
 _PRICE_RE = re.compile(
-    r"(?P<prefix>di\s+bawah|di\s+atas|kurang\s+dari|lebih\s+dari|"
+    r"(?P<prefix>di\s*bawah|di\s+atas|kurang\s+dari|lebih\s+dari|"
     r"maks(?:imal)?|minimum|min(?:imal)?|under|below|less\s+than|"
     r"more\s+than|above|up\s+to|hingga|sampai)?\s*"
     r"(?P<currency>rp|idr|rupiah|\$|usd|dollar|€|eur|euro|£|gbp|pound)?\s*"
@@ -17,6 +17,12 @@ _PRICE_RE = re.compile(
 _DISCOUNT_RE = re.compile(
     r"(?P<prefix>diskon|min(?:imal)?|minimum|at\s+least|discount)?\s*"
     r"(?P<number>\d+(?:[.,]\d+)?)\s*%\s*(?:discount|diskon)?",
+    re.IGNORECASE,
+)
+_REFERENCE_GAME_RE = re.compile(
+    r"\b(?:serupa\s+dengan|similar\s+to|seperti|mirip|like)\s+(.+?)"
+    r"(?=\s+(?:di\s*bawah|di\s+atas|kurang\s+dari|lebih\s+dari|under|below|"
+    r"less\s+than|above|up\s+to|hingga|sampai|maks(?:imal)?|minimum|min(?:imal)?)\b|$)",
     re.IGNORECASE,
 )
 
@@ -30,6 +36,7 @@ class SearchIntent:
     min_discount: Decimal | None = None
     max_discount: Decimal | None = None
     sort: str = "relevance"
+    reference_game_name: str | None = None
 
     @property
     def has_structured_constraints(self):
@@ -100,6 +107,12 @@ def parse_search_query(query, default_currency="IDR"):
         return SearchIntent(semantic_text="")
 
     semantic_text = original
+    reference_match = _REFERENCE_GAME_RE.search(original)
+    reference_game_name = (
+        " ".join(reference_match.group(1).split()).strip(" ,.!?")
+        if reference_match
+        else None
+    )
     min_price = max_price = None
     currency = None
     min_discount = max_discount = None
@@ -148,6 +161,7 @@ def parse_search_query(query, default_currency="IDR"):
 
     return SearchIntent(
         semantic_text=normalized,
+        reference_game_name=reference_game_name,
         min_price=min_price,
         max_price=max_price,
         currency=currency,

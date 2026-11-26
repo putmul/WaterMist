@@ -1,5 +1,6 @@
 import unittest
 from decimal import Decimal
+from unittest.mock import patch
 
 from app import create_app
 from app.extensions import db
@@ -102,6 +103,48 @@ class DealsSearchTests(unittest.TestCase):
         self.assertIn("Hasil berdasarkan nama", body)
         self.assertIn("Mencari rekomendasi berdasarkan makna", body)
         self.assertNotIn("Belum ada deal yang sesuai dengan filter", body)
+
+    def test_empty_literal_search_uses_semantic_results_as_primary_content(self):
+        self._deal("Tactical Squad Shooter")
+        db.session.commit()
+
+        response = self.app.test_client().get(
+            "/deals", query_string={"q": "game seperti Call of Duty di bawah 100000"}
+        )
+        body = response.get_data(as_text=True)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertNotIn("Tidak ada hasil berdasarkan nama", body)
+        self.assertNotIn("Belum ada deal yang sesuai dengan filter", body)
+        self.assertNotIn("Mungkin game ini sesuai dengan deskripsi Anda?", body)
+        self.assertIn("Mencari game yang sesuai dengan deskripsi Anda...", body)
+
+    def test_semantic_endpoint_uses_primary_heading_without_literal_matches(self):
+        game = self._deal("Tactical Squad Shooter")
+        db.session.commit()
+        deal = Deal.query.join(GameProduct).filter(GameProduct.game_id == game.id).one()
+        deal.semantic_score = 0.9
+
+        with patch("app.routes.deals.SemanticSearchService.search", return_value=[deal]):
+            response = self.app.test_client().get(
+                "/deals/semantic",
+                query_string={
+                    "q": "game seperti Call of Duty di bawah 100000",
+                    "literal_count": 0,
+                },
+            )
+
+        self.assertEqual(response.status_code, 200)
+        body = response.get_data(as_text=True)
+        self.assertIn("Mungkin game ini sesuai dengan deskripsi Anda?", body)
+        intro_start = body.index('class="frame semantic-intro"')
+        heading_start = body.index("Mungkin game ini sesuai dengan deskripsi Anda?")
+        cards_start = body.index('class="game-grid game-grid--2"')
+        self.assertLess(intro_start, heading_start)
+        self.assertLess(heading_start, cards_start)
+        self.assertIn('class="game frame"', body)
+        self.assertIn("Tactical Squad Shooter", body)
+        self.assertNotIn("game-card", body)
 
     def test_nsfw_tagged_games_are_excluded_from_literal_search(self):
         safe = self._deal("Safe Horror Game")

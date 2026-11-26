@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Masuk — WaterMist</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/pages.css">
+  <link rel="stylesheet" href="css/auth.css">
+  <script src="js/layout.js"></script>
+</head>
+<body data-page="login">
+
+  <div class="scene" aria-hidden="true">
+    <span class="cloud c1"></span><span class="cloud c2"></span><span class="cloud c3"></span><span class="cloud c4"></span>
+  </div>
+
+  <main class="auth">
+    <a class="wordmark" href="index.html">WATERMIST</a>
+    <div class="ornament" aria-hidden="true"><i></i></div>
+    <p class="subtitle">Masuk ke akun Anda</p>
+
+    <section class="auth-panel frame" aria-label="Form masuk">
+      <div class="ornament ornament--panel" aria-hidden="true"><i></i></div>
+
+      <form class="auth-form" data-auth="login" novalidate>
+        <p class="form-error" role="alert" hidden></p>
+
+        <div class="field">
+          <label class="sr-only" for="identity">Alamat Email atau Username</label>
+          <span class="field-icon" aria-hidden="true"><svg class="ico"><use href="#i-user"/></svg></span>
+          <input id="identity" name="identity" type="text" placeholder="Alamat Email atau Username" autocomplete="username" required>
+        </div>
+
+        <div class="field">
+          <label class="sr-only" for="password">Password</label>
+          <span class="field-icon" aria-hidden="true"><svg class="ico"><use href="#i-lock"/></svg></span>
+          <input id="password" name="password" type="password" placeholder="Password" autocomplete="current-password" required>
+          <button class="field-toggle" type="button" data-toggle-password aria-label="Tampilkan password" aria-pressed="false">
+            <svg class="ico"><use href="#i-eye"/></svg>
+          </button>
+        </div>
+
+        <div class="row">
+          <label class="check"><input type="checkbox" name="remember"> Ingat saya</label>
+          <a class="link" href="#forgot">Lupa password?</a>
+        </div>
+
+        <button class="btn btn-primary btn-block" type="submit">Masuk</button>
+
+        <p class="or">atau masuk dengan</p>
+
+        <button class="btn btn-secondary btn-block" type="button">
+          <svg class="ico" aria-hidden="true"><use href="#i-steam"/></svg> Masuk dengan Steam
+        </button>
+
+        <p class="switch">Belum punya akun? <a class="link" href="register.html">Daftar di sini →</a></p>
+      </form>
+    </section>
+  </main>
+
+  <script src="js/auth.js"></script>
+</body>
+</html>

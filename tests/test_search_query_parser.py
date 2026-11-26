@@ -26,6 +26,27 @@ class SearchQueryParserTests(unittest.TestCase):
         self.assertEqual(intent.sort, "price")
         self.assertEqual(intent.semantic_text, "game RPG")
 
+    def test_extracts_indonesian_reference_game_and_preserves_price_filter(self):
+        intent = parse_search_query("game seperti Call of Duty di bawah 100000")
+
+        self.assertEqual(intent.reference_game_name, "Call of Duty")
+        self.assertEqual(intent.max_price, Decimal("100000.00"))
+        self.assertEqual(intent.currency, "IDR")
+
+    def test_parses_compound_dibawah_spelling(self):
+        intent = parse_search_query("game seperti Call of Duty dibawah 100000")
+
+        self.assertEqual(intent.reference_game_name, "Call of Duty")
+        self.assertEqual(intent.semantic_text, "game seperti Call of Duty")
+        self.assertEqual(intent.max_price, Decimal("100000.00"))
+
+    def test_extracts_english_reference_game(self):
+        intent = parse_search_query("games similar to Call of Duty under $10")
+
+        self.assertEqual(intent.reference_game_name, "Call of Duty")
+        self.assertEqual(intent.max_price, Decimal("10.00"))
+        self.assertEqual(intent.currency, "USD")
+
 
 if __name__ == "__main__":
     unittest.main()

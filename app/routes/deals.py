@@ -172,9 +172,7 @@ def semantic_results():
             "Mungkin Anda juga tertarik"
             if literal_count
             else (
-                "Berdasarkan pencarian Anda, mungkin game ini cocok untuk Anda"
-                if _looks_descriptive_query(filters["q"])
-                else "Mungkin Anda mencari game ini?"
+                "Mungkin game ini sesuai dengan deskripsi Anda?"
             )
         )
         message = None
@@ -198,5 +196,6 @@ def semantic_results():
         deals=(semantic_deals or [])[:display_limit],
         heading=heading,
         message=message,
+        primary_results=literal_count == 0,
         semantic_mode=True,
     )

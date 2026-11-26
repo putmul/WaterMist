@@ -1,16 +1,17 @@
 {% macro render_deal_card(deal, show_score=false) %}
 {% set product = deal.game_product %}
-<article class="game-card deal-card">
-    {% if product.game.cover_image %}<img src="{{ product.game.cover_image }}" alt="{{ product.game.name }}">{% endif %}
-    <h2><a href="{{ url_for('games.detail', game_id=product.game.id) }}">{{ product.game.name }}</a></h2>
-    <p class="deal-store">{{ product.store.name }} · {{ product.currency }} ({{ product.region }})</p>
-    <p><s>{{ product.currency }} {{ '%.2f'|format(deal.normal_price) }}</s>
-        <strong>{{ product.currency }} {{ '%.2f'|format(deal.sale_price) }}</strong></p>
-    <p class="discount">Skor diskon: -{{ '%.0f'|format(deal.discount_percent) }}%</p>
+<article class="game frame">
+    {% if product.game.cover_image %}<img class="cover" src="{{ product.game.cover_image }}" alt="Cover {{ product.game.name }}" loading="lazy">{% endif %}
+    <h3><a href="{{ url_for('games.detail', game_id=product.game.id) }}">{{ product.game.name }}</a></h3>
+    <p class="meta">{{ product.store.name }} · {{ product.region }}</p>
+    <div class="price-row"><span class="badge">-{{ '%.0f'|format(deal.discount_percent) }}%</span>
+        <span class="price">{{ deal.sale_price|idr(product.currency) or 'Konversi IDR tidak tersedia' }}</span>
+        {% if deal.normal_price|idr(product.currency) %}<s class="price-old">{{ deal.normal_price|idr(product.currency) }}</s>{% endif %}
+    </div>
     {% if show_score and deal.semantic_score is not none %}
-    <p class="muted">Skor kemiripan: {{ '%.0f'|format(deal.semantic_score * 100) }}%</p>
+    <p class="meta">Skor kemiripan: {{ '%.0f'|format(deal.semantic_score * 100) }}%</p>
     {% endif %}
-    <a class="detail-button" href="{{ url_for('games.detail', game_id=product.game.id) }}">Detail game</a>
-    <a class="deal-button" href="{{ deal.deal_url }}" target="_blank" rel="noopener">Lihat deal</a>
+    <a class="btn btn-secondary" href="{{ url_for('games.detail', game_id=product.game.id) }}">Detail game</a>
+    <a class="btn btn-primary" href="{{ deal.deal_url }}" target="_blank" rel="noopener">Lihat deal</a>
 </article>
 {% endmacro %}

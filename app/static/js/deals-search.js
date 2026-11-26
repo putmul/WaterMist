@@ -26,7 +26,12 @@
             target.innerHTML = html;
         })
         .catch(function () {
+            const literalCount = Number((config.params || {}).literal_count || 0);
             target.innerHTML =
-                '<div class="empty-state semantic-message"><p>Rekomendasi berdasarkan makna belum dapat dimuat. Hasil berdasarkan nama tetap tersedia.</p></div>';
+                '<div class="empty-state semantic-message"><p>' +
+                (literalCount > 0
+                    ? 'Rekomendasi berdasarkan makna belum dapat dimuat. Hasil berdasarkan nama tetap tersedia.'
+                    : 'Pencarian berdasarkan makna belum dapat dimuat. Coba ubah deskripsi pencarian Anda.') +
+                '</p></div>';
         });
 })();

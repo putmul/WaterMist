@@ -3,6 +3,7 @@
 import json
 import logging
 import math
+import re
 from dataclasses import dataclass, replace
 
 from flask import current_app
@@ -51,6 +52,10 @@ class SemanticSearchService:
 
     def __init__(self, encoder=None):
         self.encoder = encoder
+
+    @staticmethod
+    def _normalized_title(value):
+        return " ".join(re.sub(r"[^a-z0-9]+", " ", (value or "").casefold()).split())
 
     @classmethod
     def _load_model(cls):
@@ -216,6 +221,15 @@ class SemanticSearchService:
                 deal
                 for deal in deals
                 if deal.game_product.game.id not in exclude_game_ids
+            ]
+
+        reference_title = self._normalized_title(intent.reference_game_name)
+        if reference_title:
+            deals = [
+                deal
+                for deal in deals
+                if reference_title
+                not in self._normalized_title(deal.game_product.game.name)
             ]
 
         if not intent.semantic_text:

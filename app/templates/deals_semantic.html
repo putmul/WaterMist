@@ -1,13 +1,14 @@
 {% from "_deal_card.html" import render_deal_card %}
 {% if deals %}
-<section class="search-section semantic-section">
-    {% if heading %}<h2>{{ heading }}</h2>{% endif %}
-    <div class="game-grid">
+<section class="search-section semantic-section{% if primary_results %} semantic-primary-results{% endif %}">
+    {% if heading and primary_results %}<div class="frame semantic-intro"><h2>{{ heading }}</h2></div>
+    {% elif heading %}<h2>{{ heading }}</h2>{% endif %}
+    <div class="game-grid game-grid--2">
         {% for deal in deals %}
             {{ render_deal_card(deal, show_score=true) }}
         {% endfor %}
     </div>
 </section>
 {% elif message %}
-<div class="empty-state semantic-message"><p>{{ message }}</p></div>
+<div class="empty-state semantic-message{% if primary_results %} semantic-primary-results{% endif %}"><p>{{ message }}</p></div>
 {% endif %}

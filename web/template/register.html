@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Daftar — WaterMist</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/pages.css">
+  <link rel="stylesheet" href="css/auth.css">
+  <script src="js/layout.js"></script>
+</head>
+<body data-page="register">
+
+  <div class="scene" aria-hidden="true">
+    <span class="cloud c1"></span><span class="cloud c2"></span><span class="cloud c3"></span><span class="cloud c4"></span>
+  </div>
+
+  <main class="auth">
+    <a class="wordmark" href="index.html">WATERMIST</a>
+    <div class="ornament" aria-hidden="true"><i></i></div>
+    <p class="subtitle">Buat akun baru</p>
+
+    <section class="auth-panel frame" aria-label="Form pendaftaran">
+      <div class="ornament ornament--panel" aria-hidden="true"><i></i></div>
+
+      <form class="auth-form" data-auth="register" novalidate>
+        <p class="form-error" role="alert" hidden></p>
+
+        <div class="field">
+          <label class="sr-only" for="username">Username</label>
+          <span class="field-icon" aria-hidden="true"><svg class="ico"><use href="#i-user"/></svg></span>
+          <input id="username" name="username" type="text" placeholder="Username" autocomplete="username" minlength="3" aria-describedby="username-hint" required>
+        </div>
+        <p class="hint" id="username-hint">Minimal 3 karakter</p>
+
+        <div class="field">
+          <label class="sr-only" for="email">Alamat Email</label>
+          <span class="field-icon" aria-hidden="true"><svg class="ico"><use href="#i-mail"/></svg></span>
+          <input id="email" name="email" type="email" placeholder="Alamat Email" autocomplete="email" required>
+        </div>
+
+        <div class="field">
+          <label class="sr-only" for="password">Password</label>
+          <span class="field-icon" aria-hidden="true"><svg class="ico"><use href="#i-lock"/></svg></span>
+          <input id="password" name="password" type="password" placeholder="Password" autocomplete="new-password" required>
+          <button class="field-toggle" type="button" data-toggle-password aria-label="Tampilkan password" aria-pressed="false">
+            <svg class="ico"><use href="#i-eye"/></svg>
+          </button>
+        </div>
+
+        <div class="field">
+          <label class="sr-only" for="password2">Konfirmasi Password</label>
+          <span class="field-icon" aria-hidden="true"><svg class="ico"><use href="#i-lock"/></svg></span>
+          <input id="password2" name="password2" type="password" placeholder="Konfirmasi Password" autocomplete="new-password" required>
+          <button class="field-toggle" type="button" data-toggle-password aria-label="Tampilkan password" aria-pressed="false">
+            <svg class="ico"><use href="#i-eye"/></svg>
+          </button>
+        </div>
+
+        <label class="check check--terms">
+          <input type="checkbox" name="terms" required>
+          <span>Saya setuju dengan <a href="#terms">Syarat &amp; Ketentuan</a> dan <a href="#privacy">Kebijakan Privasi</a> WaterMist.</span>
+        </label>
+
+        <button class="btn btn-primary btn-block" type="submit">Daftar</button>
+
+        <p class="or">atau daftar dengan</p>
+
+        <button class="btn btn-secondary btn-block" type="button">
+          <svg class="ico" aria-hidden="true"><use href="#i-steam"/></svg> Daftar dengan Steam
+        </button>
+
+        <p class="switch">Sudah punya akun? <a class="link" href="login.html">Masuk di sini →</a></p>
+      </form>
+    </section>
+  </main>
+
+  <script src="js/auth.js"></script>
+</body>
+</html>

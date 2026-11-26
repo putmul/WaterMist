@@ -23,7 +23,7 @@
         {% if q or max_price %}<a class="btn btn-secondary" href="{{ url_for('deals.deals') }}">Hapus filter</a>{% endif %}
       </form>
       {% if updated_at %}<p class="meta">Data diperbarui: {{ updated_at }}</p>{% endif %}
-      {% if q %}<h2>Hasil berdasarkan nama</h2>{% endif %}
+      {% if q and literal_deals_found %}<h2>Hasil berdasarkan nama</h2>{% endif %}
       {% if deals %}
       <div class="game-grid game-grid--2">
         {% for deal in deals %}{% set product = deal.game_product %}{% set game = product.game %}
@@ -36,10 +36,10 @@
         </article>
         {% endfor %}
       </div>
-      {% elif q %}<p class="frame" style="padding:20px">Tidak ada hasil berdasarkan nama.</p>
-      {% else %}<p class="frame" style="padding:20px">Belum ada deal yang sesuai dengan filter.</p>{% endif %}
+      {% elif q and not semantic_config.has_semantic_query %}<p class="frame" style="padding:20px">Tidak ada hasil berdasarkan nama.</p>
+      {% elif not q %}<p class="frame" style="padding:20px">Belum ada deal yang sesuai dengan filter.</p>{% endif %}
       {% if q %}<section id="semantic-results" aria-live="polite">
-        {% if semantic_config.has_semantic_query %}<p class="frame" style="padding:16px">Mencari rekomendasi berdasarkan makna...</p>
+        {% if semantic_config.has_semantic_query %}<p class="frame semantic-loading" style="padding:16px">{% if not literal_deals_found %}Mencari game yang sesuai dengan deskripsi Anda...{% else %}Mencari rekomendasi berdasarkan makna...{% endif %}</p>
         {% else %}<p class="meta">Masukkan deskripsi game untuk rekomendasi berdasarkan makna.</p>{% endif %}
       </section>
       <script>window.watermistSemanticSearch = {{ semantic_config|tojson }};</script>

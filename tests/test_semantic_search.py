@@ -4,7 +4,7 @@ from decimal import Decimal
 from app import create_app
 from app.extensions import db
 from app.models import Deal, Game, GameProduct, GameTag, Store
-from app.services.search_query_parser import SearchIntent
+from app.services.search_query_parser import SearchIntent, parse_search_query
 from app.services.semantic_search_service import SemanticSearchService
 
 
@@ -138,6 +138,22 @@ class SemanticSearchTests(unittest.TestCase):
         result_ids = [deal.game_product.game.id for deal in results]
         self.assertIn(safe.id, result_ids)
         self.assertNotIn(blocked.id, result_ids)
+
+    def test_similar_game_search_excludes_reference_franchise(self):
+        reference, _ = self._deal("Call of Duty: Modern Warfare III", [], 80000)
+        franchise, _ = self._deal("Call of Duty: Black Ops", [], 70000)
+        similar, _ = self._deal("Tactical Squad Shooter", ["FPS"], 60000)
+        db.session.commit()
+
+        intent = parse_search_query("game seperti Call of Duty dibawah 100000")
+        self.assertEqual(intent.reference_game_name, "Call of Duty")
+        self.assertEqual(intent.max_price, Decimal("100000.00"))
+        results = SemanticSearchService(encoder=self._encoder).search(intent)
+        result_ids = [deal.game_product.game.id for deal in results]
+
+        self.assertNotIn(reference.id, result_ids)
+        self.assertNotIn(franchise.id, result_ids)
+        self.assertIn(similar.id, result_ids)
 
 
 if __name__ == "__main__":
