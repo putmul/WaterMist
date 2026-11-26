@@ -8,7 +8,7 @@
   <link rel="stylesheet" href="{{ url_for('frontend.static', filename='css/watermist.css') }}">
   <script src="{{ url_for('frontend.static', filename='js/layout.js') }}"></script>
 </head>
-<body data-page="recommendations">
+<body data-page="recommendations" data-recommendation-tab="popular" data-recommendation-background="popular">
   <div data-slot="topbar"></div>
   <main class="page"><header class="page-header container"><h1>Recommendations</h1><p>Rekomendasi game berdasarkan genre dan tag pilihanmu.</p></header>
     <div class="container page-body">
@@ -18,7 +18,11 @@
         <button class="btn btn-primary" type="submit">Cari rekomendasi</button>
         {% if result.genres or result.tags %}<a class="btn btn-secondary" href="{{ url_for('recommendations.recommendations') }}">Reset</a>{% endif %}
       </form>
-      <section id="popular"><h2>Popular Picks</h2>
+      <div class="tabs tabs--line recommendation-tabs" role="tablist" aria-label="Kategori rekomendasi">
+        <button class="tab" id="tab-popular" type="button" role="tab" aria-selected="true" aria-controls="popular" tabindex="0">Popular Picks</button>
+        <button class="tab" id="tab-gems" type="button" role="tab" aria-selected="false" aria-controls="gems" tabindex="-1">Hidden Gem</button>
+      </div>
+      <section id="popular" class="recommendation-panel" role="tabpanel" aria-labelledby="tab-popular" tabindex="0">
         <div class="rec-list">
           {% for item in result.popular %}{% set game = item.game %}
           <article class="rec frame">
@@ -30,7 +34,7 @@
           </article>{% else %}<p class="frame" style="padding:18px">Belum ada rekomendasi populer yang cocok.</p>{% endfor %}
         </div>
       </section>
-      <section id="gems" style="margin-top:36px"><h2>Hidden Gems</h2>
+      <section id="gems" class="recommendation-panel" role="tabpanel" aria-labelledby="tab-gems" tabindex="0" hidden>
         <div class="rec-list">
           {% for item in result.hidden_gem %}{% set game = item.game %}
           <article class="rec frame">
@@ -44,5 +48,119 @@
       </section>
     </div><div data-slot="footer"></div>
   </main>
+  <script>
+    (function () {
+      var tabs = Array.from(document.querySelectorAll('[role="tab"]'));
+      var panels = tabs.map(function (tab) {
+        return document.getElementById(tab.getAttribute('aria-controls'));
+      });
+      var activeIndex = tabs.findIndex(function (tab) {
+        return tab.getAttribute('aria-selected') === 'true';
+      });
+      var runningAnimations = [];
+      var transitionId = 0;
+      var backgroundTransitionId = 0;
+      var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+      function finishBackgroundTransition() {
+        var nextBackground = document.body.dataset.recommendationBackgroundNext;
+        if (!nextBackground) return;
+        document.body.dataset.recommendationBackground = nextBackground;
+        delete document.body.dataset.recommendationBackgroundNext;
+        document.body.classList.remove('is-background-transitioning');
+      }
+
+      function activateTab(index, moveFocus) {
+        if (index === activeIndex) {
+          if (moveFocus) tabs[index].focus();
+          return;
+        }
+
+        var previousIndex = activeIndex;
+        var previousPanel = panels[previousIndex];
+        var nextPanel = panels[index];
+        var direction = index > previousIndex ? 1 : -1;
+        var currentTransitionId = ++transitionId;
+        runningAnimations.forEach(function (animation) { animation.cancel(); });
+        runningAnimations = [];
+        finishBackgroundTransition();
+
+        document.body.dataset.recommendationTab = index === 0 ? 'popular' : 'gems';
+        tabs.forEach(function (tab, tabIndex) {
+          var selected = tabIndex === index;
+          tab.setAttribute('aria-selected', String(selected));
+          tab.tabIndex = selected ? 0 : -1;
+        });
+
+        panels.forEach(function (panel, panelIndex) {
+          if (panelIndex !== previousIndex && panelIndex !== index) {
+            panel.hidden = true;
+            panel.setAttribute('aria-hidden', 'true');
+            panel.setAttribute('inert', '');
+          }
+        });
+        previousPanel.hidden = false;
+        previousPanel.setAttribute('aria-hidden', 'true');
+        previousPanel.setAttribute('inert', '');
+        nextPanel.hidden = false;
+        nextPanel.setAttribute('aria-hidden', 'false');
+        nextPanel.removeAttribute('inert');
+
+        if (reduceMotion.matches) {
+          previousPanel.hidden = true;
+          activeIndex = index;
+          document.body.dataset.recommendationBackground = index === 0 ? 'popular' : 'gems';
+          finishBackgroundTransition();
+        } else {
+          var outgoing = previousPanel.animate([
+            { opacity: 1, transform: 'translateX(0)' },
+            { opacity: 0, transform: 'translateX(' + (-12 * direction) + 'px)' }
+          ], { duration: 220, easing: 'ease', fill: 'forwards' });
+          var incoming = nextPanel.animate([
+            { opacity: 0, transform: 'translateX(' + (12 * direction) + 'px)' },
+            { opacity: 1, transform: 'translateX(0)' }
+          ], { duration: 220, easing: 'ease', fill: 'forwards' });
+          runningAnimations = [outgoing, incoming];
+          Promise.all([
+            outgoing.finished.catch(function () {}),
+            incoming.finished.catch(function () {})
+          ]).then(function () {
+            if (currentTransitionId !== transitionId) return;
+            previousPanel.hidden = true;
+            outgoing.cancel();
+            incoming.cancel();
+            runningAnimations = [];
+          });
+
+          void document.body.offsetWidth;
+          document.body.dataset.recommendationBackgroundNext = index === 0 ? 'popular' : 'gems';
+          void document.body.offsetWidth;
+          document.body.classList.add('is-background-transitioning');
+          var currentBackgroundTransitionId = ++backgroundTransitionId;
+          window.setTimeout(function () {
+            if (currentBackgroundTransitionId === backgroundTransitionId) {
+              finishBackgroundTransition();
+            }
+          }, 340);
+          activeIndex = index;
+        }
+        if (moveFocus) tabs[index].focus();
+      }
+
+      tabs.forEach(function (tab, index) {
+        tab.addEventListener('click', function () { activateTab(index, false); });
+        tab.addEventListener('keydown', function (event) {
+          var next = index;
+          if (event.key === 'ArrowRight') next = (index + 1) % tabs.length;
+          else if (event.key === 'ArrowLeft') next = (index - 1 + tabs.length) % tabs.length;
+          else if (event.key === 'Home') next = 0;
+          else if (event.key === 'End') next = tabs.length - 1;
+          else return;
+          event.preventDefault();
+          activateTab(next, true);
+        });
+      });
+    })();
+  </script>
 </body>
 </html>

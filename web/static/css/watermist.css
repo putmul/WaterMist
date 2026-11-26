@@ -24,6 +24,11 @@
   --font-body: "Pixelify Sans", monospace;
   --topbar: 72px;
   --background-image: url("../assets/images/watermist-background-transparent.png");
+  --deals-background: url("../assets/images/deals-background.jpeg");
+  --releases-background: url("../assets/images/new-background.jpg");
+  --detail-background: url("../assets/images/watermist-background-transparent.png");
+  --recommendation-popular-background: url("../assets/images/recomendation-background.jpg");
+  --recommendation-gems-background: url("../assets/images/hiddengem-background.jpg");
 }
 
 [data-theme="dark"] {
@@ -38,6 +43,11 @@
   --deep-tide: #5fa6ac;
   --sky: #16293a;
   --background-image: url("../assets/images/watermist-background-dark.png");
+  --deals-background: url("../assets/images/deals-background-dark.jpg");
+  --releases-background: url("../assets/images/new-background-dark.jpg");
+  --detail-background: url("../assets/images/watermist-background-dark.png");
+  --recommendation-popular-background: url("../assets/images/recomendation-background-dark.jpg");
+  --recommendation-gems-background: url("../assets/images/hiddengem-background-dark.jpg");
 }
 
 * {
@@ -128,23 +138,30 @@ a {
 .c4 { top: 34%; left: 88%; --s: 3; }
 
 body[data-page="deals"] {
-  background: var(--sky) url("../assets/images/deals-background.jpeg")
-    center / cover fixed;
+  background-color: var(--sky);
+  background-image: var(--deals-background);
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
 }
 
 body[data-page="new-releases"] {
-  background: var(--sky) url("../assets/images/new-background.jpg")
-    center / cover fixed;
-}
-
-body[data-page="recommendations"] {
-  background: var(--sky) url("../assets/images/recomendation-background.jpg")
-    center / cover fixed;
+  background-color: var(--sky);
+  background-image: var(--releases-background);
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
 }
 
 body[data-page="game-detail"] {
-  background: var(--sky) url("../assets/images/watermist-background-transparent.png")
-    center / cover fixed;
+  background-color: var(--sky);
+  background-image: var(--detail-background);
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
 }
 
 /* Buttons and inputs */
@@ -699,6 +716,73 @@ main {
 .rec-head h3 { font-family: var(--font-body); font-size: 18px; font-weight: 600; }
 .rec-actions { display: grid; gap: 12px; }
 .rec-actions .btn { padding: 8px 16px; font-size: 14px; }
+.recommendation-tabs { margin-bottom: -24px; }
+.recommendation-panel { min-width: 0; }
+
+body[data-page="recommendations"]::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image: var(--recommendation-background);
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+}
+body[data-page="recommendations"]::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image: var(--recommendation-background-next);
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+  opacity: 0;
+  transition: opacity 300ms ease;
+}
+body[data-page="recommendations"].is-background-transitioning::after {
+  opacity: 1;
+}
+body[data-page="recommendations"][data-recommendation-background="popular"] {
+  --recommendation-background: var(--recommendation-popular-background);
+}
+body[data-page="recommendations"][data-recommendation-background="gems"] {
+  --recommendation-background: var(--recommendation-gems-background);
+}
+body[data-page="recommendations"][data-recommendation-background-next="popular"] {
+  --recommendation-background-next: var(--recommendation-popular-background);
+}
+body[data-page="recommendations"][data-recommendation-background-next="gems"] {
+  --recommendation-background-next: var(--recommendation-gems-background);
+}
+
+.recommendation-tabs .tab {
+  flex: 1;
+  min-height: 72px;
+  border: var(--border);
+  background: var(--panel);
+  box-shadow: var(--soft-shadow);
+  font-size: 20px;
+  font-weight: 600;
+  transition: transform 140ms steps(4), box-shadow 140ms steps(4), background-color 140ms steps(4);
+}
+.recommendation-tabs .tab:hover { transform: translateY(-2px); }
+.recommendation-tabs .tab[aria-selected="true"] {
+  border: var(--border);
+  background: var(--tide);
+  color: var(--fog);
+  box-shadow: var(--hard-shadow);
+  transform: translateY(-3px);
+}
+.recommendation-tabs .tab:focus-visible { outline-offset: 5px; }
+.recommendation-panel[hidden] { display: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  body[data-page="recommendations"]::after { transition: none; }
+}
 
 /* ===== Pagination ===== */
 .pagination { display: flex; justify-content: center; align-items: center; gap: 8px; }
@@ -805,4 +889,3 @@ main {
 @media (max-width: 1023px) {
   .detail-hero, .split, .about { grid-template-columns: 1fr; gap: 40px; }
 }
-
