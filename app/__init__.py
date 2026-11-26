@@ -35,6 +35,12 @@ def create_app(config_object=None, start_scheduler=False):
 
     app.jinja_env.filters["idr"] = format_idr
 
+    @app.context_processor
+    def inject_auth_user():
+        from .auth import current_user
+
+        return {"auth_user": current_user()}
+
     from . import models  # noqa: F401
     from .routes.deals import deals_bp
     from .routes.frontend import frontend_bp

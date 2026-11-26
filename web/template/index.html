@@ -23,12 +23,8 @@
     <a href="{{ url_for('recommendations.recommendations') }}">Recommendations</a>
   </nav>
   <div class="tools">
-    <form class="search" role="search" action="{{ url_for('deals.deals') }}" method="get">
-      <input name="q" type="search" placeholder="Cari game..." aria-label="Cari game">
-    </form>
-    <select aria-label="Mata uang"><option>IDR</option><option>USD</option></select>
     <button class="btn btn-secondary theme-toggle" type="button" aria-label="Ganti ke dark mode" aria-pressed="false" title="Ganti tema">☾</button>
-    <button class="btn btn-primary" type="button">Login</button>
+    <a class="btn btn-primary" href="{{ url_for('auth.login') }}">Login</a>
   </div>
 </header>
 
@@ -43,7 +39,7 @@
     </form>
     <div class="cta">
       <a class="btn btn-primary" href="{{ url_for('deals.deals') }}">Explore Deals →</a>
-      <a class="btn btn-secondary" href="{{ url_for('recommendations.recommendations') }}">Recommendations</a>
+      <a class="btn btn-secondary" href="{{ url_for('auth.login') }}">Login</a>
     </div>
     <p class="scroll-hint" aria-hidden="true">▼</p>
     <p class="scroll-hint2" aria-hidden="true">▼</p>

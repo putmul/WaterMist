@@ -25,20 +25,23 @@
     b.querySelector('use').setAttribute('href', show ? '#i-eye-off' : '#i-eye');
   });
 
-  // Validasi dasar (ganti bagian TODO dengan request ke API)
+  // Validasi tambahan; form tetap dikirim sebagai POST ke backend Flask.
   document.querySelectorAll('form[data-auth]').forEach(function (f) {
     f.addEventListener('submit', function (e) {
-      e.preventDefault();
-      var el = f.elements, msg = '';
-      if (f.dataset.auth === 'register') {
-        if (el.username.value.trim().length < 3) msg = 'Username minimal 3 karakter.';
-        else if (el.password.value !== el.password2.value) msg = 'Konfirmasi password tidak cocok.';
-        else if (!el.terms.checked) msg = 'Setujui Syarat & Ketentuan untuk melanjutkan.';
-      }
+      if (f.dataset.auth !== 'register') return;
+      var el = f.elements;
       var out = f.querySelector('.form-error');
-      out.textContent = msg;
-      out.hidden = !msg;
-      if (!msg) { /* TODO: kirim ke API */ }
+      if (el.password.value !== el.password2.value) {
+        e.preventDefault();
+        if (out) {
+          out.textContent = 'Konfirmasi password tidak cocok.';
+          out.hidden = false;
+        }
+        el.password2.focus();
+      } else if (out) {
+        out.textContent = '';
+        out.hidden = true;
+      }
     });
   });
 })();

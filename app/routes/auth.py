@@ -28,10 +28,10 @@ def register():
         password = request.form.get("password", "")
         if not email or "@" not in email or len(password) < 8:
             flash("Email valid dan password minimal 8 karakter diperlukan.", "error")
-            return render_template("auth/register.html"), 400
+            return render_template("register.html"), 400
         if User.query.filter_by(email=email).first() is not None:
             flash("Email sudah terdaftar.", "error")
-            return render_template("auth/register.html"), 409
+            return render_template("register.html"), 409
         user = User(email=email)
         user.set_password(password)
         db.session.add(user)
@@ -39,7 +39,7 @@ def register():
         session.clear()
         session["user_id"] = user.id
         return redirect(url_for("onboarding.quiz"))
-    return render_template("auth/register.html")
+    return render_template("register.html")
 
 
 @auth_bp.route("/login", methods=["GET", "POST"])
@@ -49,13 +49,13 @@ def login():
         user = User.query.filter_by(email=email, status="active").one_or_none()
         if user is None or not user.check_password(request.form.get("password", "")):
             flash("Email atau password salah.", "error")
-            return render_template("auth/login.html"), 401
+            return render_template("login.html"), 401
         user.last_login_at = local_now()
         db.session.commit()
         session.clear()
         session["user_id"] = user.id
         return redirect(url_for("recommendations.recommendations"))
-    return render_template("auth/login.html")
+    return render_template("login.html")
 
 
 @auth_bp.post("/logout")

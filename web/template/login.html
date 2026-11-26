@@ -7,10 +7,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css">
-  <link rel="stylesheet" href="css/pages.css">
-  <link rel="stylesheet" href="css/auth.css">
-  <script src="js/layout.js"></script>
+  <link rel="stylesheet" href="{{ url_for('frontend.static', filename='css/watermist.css') }}">
+  <link rel="stylesheet" href="{{ url_for('frontend.static', filename='css/auth.css') }}">
+  <script src="{{ url_for('frontend.static', filename='js/layout.js') }}"></script>
 </head>
 <body data-page="login">
 
@@ -19,20 +18,24 @@
   </div>
 
   <main class="auth">
-    <a class="wordmark" href="index.html">WATERMIST</a>
+     <a class="wordmark" href="{{ url_for('main.dashboard') }}">WATERMIST</a>
     <div class="ornament" aria-hidden="true"><i></i></div>
     <p class="subtitle">Masuk ke akun Anda</p>
 
     <section class="auth-panel frame" aria-label="Form masuk">
       <div class="ornament ornament--panel" aria-hidden="true"><i></i></div>
 
-      <form class="auth-form" data-auth="login" novalidate>
-        <p class="form-error" role="alert" hidden></p>
+      <form class="auth-form" data-auth="login" method="post" action="{{ url_for('auth.login') }}">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% for category, message in messages %}
+            <p class="form-error" role="alert">{{ message }}</p>
+          {% endfor %}
+        {% endwith %}
 
         <div class="field">
-          <label class="sr-only" for="identity">Alamat Email atau Username</label>
-          <span class="field-icon" aria-hidden="true"><svg class="ico"><use href="#i-user"/></svg></span>
-          <input id="identity" name="identity" type="text" placeholder="Alamat Email atau Username" autocomplete="username" required>
+          <label class="sr-only" for="email">Alamat Email</label>
+          <span class="field-icon" aria-hidden="true"><svg class="ico"><use href="#i-mail"/></svg></span>
+          <input id="email" name="email" type="email" placeholder="Alamat Email" autocomplete="email" required>
         </div>
 
         <div class="field">
@@ -44,24 +47,13 @@
           </button>
         </div>
 
-        <div class="row">
-          <label class="check"><input type="checkbox" name="remember"> Ingat saya</label>
-          <a class="link" href="#forgot">Lupa password?</a>
-        </div>
-
         <button class="btn btn-primary btn-block" type="submit">Masuk</button>
 
-        <p class="or">atau masuk dengan</p>
-
-        <button class="btn btn-secondary btn-block" type="button">
-          <svg class="ico" aria-hidden="true"><use href="#i-steam"/></svg> Masuk dengan Steam
-        </button>
-
-        <p class="switch">Belum punya akun? <a class="link" href="register.html">Daftar di sini →</a></p>
+        <p class="switch">Belum punya akun? <a class="link" href="{{ url_for('auth.register') }}">Daftar di sini →</a></p>
       </form>
     </section>
   </main>
 
-  <script src="js/auth.js"></script>
+  <script src="{{ url_for('frontend.static', filename='js/auth.js') }}"></script>
 </body>
 </html>

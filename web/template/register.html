@@ -7,10 +7,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css">
-  <link rel="stylesheet" href="css/pages.css">
-  <link rel="stylesheet" href="css/auth.css">
-  <script src="js/layout.js"></script>
+  <link rel="stylesheet" href="{{ url_for('frontend.static', filename='css/watermist.css') }}">
+  <link rel="stylesheet" href="{{ url_for('frontend.static', filename='css/auth.css') }}">
+  <script src="{{ url_for('frontend.static', filename='js/layout.js') }}"></script>
 </head>
 <body data-page="register">
 
@@ -19,22 +18,20 @@
   </div>
 
   <main class="auth">
-    <a class="wordmark" href="index.html">WATERMIST</a>
+     <a class="wordmark" href="{{ url_for('main.dashboard') }}">WATERMIST</a>
     <div class="ornament" aria-hidden="true"><i></i></div>
     <p class="subtitle">Buat akun baru</p>
 
     <section class="auth-panel frame" aria-label="Form pendaftaran">
       <div class="ornament ornament--panel" aria-hidden="true"><i></i></div>
 
-      <form class="auth-form" data-auth="register" novalidate>
+      <form class="auth-form" data-auth="register" method="post" action="{{ url_for('auth.register') }}">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% for category, message in messages %}
+            <p class="form-error" role="alert">{{ message }}</p>
+          {% endfor %}
+        {% endwith %}
         <p class="form-error" role="alert" hidden></p>
-
-        <div class="field">
-          <label class="sr-only" for="username">Username</label>
-          <span class="field-icon" aria-hidden="true"><svg class="ico"><use href="#i-user"/></svg></span>
-          <input id="username" name="username" type="text" placeholder="Username" autocomplete="username" minlength="3" aria-describedby="username-hint" required>
-        </div>
-        <p class="hint" id="username-hint">Minimal 3 karakter</p>
 
         <div class="field">
           <label class="sr-only" for="email">Alamat Email</label>
@@ -45,7 +42,7 @@
         <div class="field">
           <label class="sr-only" for="password">Password</label>
           <span class="field-icon" aria-hidden="true"><svg class="ico"><use href="#i-lock"/></svg></span>
-          <input id="password" name="password" type="password" placeholder="Password" autocomplete="new-password" required>
+          <input id="password" name="password" type="password" placeholder="Password (minimal 8 karakter)" autocomplete="new-password" minlength="8" required>
           <button class="field-toggle" type="button" data-toggle-password aria-label="Tampilkan password" aria-pressed="false">
             <svg class="ico"><use href="#i-eye"/></svg>
           </button>
@@ -67,17 +64,11 @@
 
         <button class="btn btn-primary btn-block" type="submit">Daftar</button>
 
-        <p class="or">atau daftar dengan</p>
-
-        <button class="btn btn-secondary btn-block" type="button">
-          <svg class="ico" aria-hidden="true"><use href="#i-steam"/></svg> Daftar dengan Steam
-        </button>
-
-        <p class="switch">Sudah punya akun? <a class="link" href="login.html">Masuk di sini →</a></p>
+        <p class="switch">Sudah punya akun? <a class="link" href="{{ url_for('auth.login') }}">Masuk di sini →</a></p>
       </form>
     </section>
   </main>
 
-  <script src="js/auth.js"></script>
+  <script src="{{ url_for('frontend.static', filename='js/auth.js') }}"></script>
 </body>
 </html>

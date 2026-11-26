@@ -8,7 +8,7 @@
   <link rel="stylesheet" href="{{ url_for('frontend.static', filename='css/watermist.css') }}">
   <script src="{{ url_for('frontend.static', filename='js/layout.js') }}"></script>
 </head>
-<body data-page="recommendations" data-recommendation-tab="{{ active_tab }}" data-recommendation-background="{{ 'popular' if active_tab == 'popular' else 'gems' }}">
+<body data-page="recommendations" data-authenticated="{{ 'true' if auth_user else 'false' }}" data-recommendation-tab="{{ active_tab }}" data-recommendation-background="{{ 'popular' if active_tab == 'popular' else 'gems' }}">
   <div data-slot="topbar"></div>
   <main class="page"><header class="page-header container"><h1>Recommendations</h1><p>Rekomendasi game berdasarkan genre dan tag pilihanmu.</p></header>
     <div class="container page-body">

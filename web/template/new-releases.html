@@ -8,7 +8,7 @@
   <link rel="stylesheet" href="{{ url_for('frontend.static', filename='css/watermist.css') }}">
   <script src="{{ url_for('frontend.static', filename='js/layout.js') }}"></script>
 </head>
-<body data-page="new-releases">
+<body data-page="new-releases" data-authenticated="{{ 'true' if auth_user else 'false' }}">
   <div data-slot="topbar"></div>
   <main class="page"><header class="page-header container"><h1>Recently Released</h1><p>Game yang dirilis dalam {{ days }} hari terakhir.</p></header>
     <div class="container page-body">

@@ -42,7 +42,7 @@
   }
 
   /* ---------- Markup bersama ---------- */
-  function topbar(page) {
+  function topbar(page, authenticated) {
     var links = NAV.map(function (n) {
       return '<a href="' + n[1] + '"' + (n[0] === page ? ' aria-current="page"' : '') + '>' + n[2] + '</a>';
     }).join('');
@@ -54,7 +54,11 @@
           '<form class="search" role="search" action="/deals" method="get">' +
           '<input name="q" type="search" placeholder="Cari game..." aria-label="Cari game"></form>' : '') +
         '<button class="btn btn-secondary theme-toggle" type="button" aria-pressed="false">Gelap</button>' +
-        '<button class="btn btn-primary" type="button">Login</button>' +
+        (authenticated ?
+          '<a class="btn btn-secondary account-link" href="/profile" aria-label="Akun" title="Akun">' +
+            '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4 21v-2a8 8 0 0 1 16 0v2z"></path></svg>' +
+          '</a><form class="logout-form" action="/auth/logout" method="post"><button class="btn btn-primary" type="submit">Logout</button></form>' :
+          '<a class="btn btn-primary" href="/auth/login">Login</a>') +
       '</div></header>';
   }
 
@@ -90,16 +94,20 @@
 
   /* ---------- Init ---------- */
   function init() {
-    slot('topbar', topbar(document.body.dataset.page));
+    slot('topbar', topbar(
+      document.body.dataset.page,
+      document.body.dataset.authenticated === 'true'
+    ));
     slot('footer', FOOTER);
 
     var btn = document.querySelector('.theme-toggle');
     function sync() {
+      if (!btn) return;
       var dark = root.getAttribute('data-theme') === 'dark';
       btn.textContent = dark ? 'Terang' : 'Gelap';
       btn.setAttribute('aria-pressed', dark);
     }
-    btn.addEventListener('click', function () {
+    if (btn) btn.addEventListener('click', function () {
       var next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
       applyTheme(next);
       try { localStorage.setItem(KEY, next); } catch (e) {}
@@ -112,9 +120,11 @@
     document.querySelectorAll('.pagination[data-total]').forEach(pagination);
 
     var scene = document.querySelector('.scene');
-    function onScroll() { scene.classList.toggle('is-blurred', window.scrollY > 80); }
-    window.addEventListener('scroll', onScroll, { passive: true });
-    onScroll();
+    if (scene) {
+      function onScroll() { scene.classList.toggle('is-blurred', window.scrollY > 80); }
+      window.addEventListener('scroll', onScroll, { passive: true });
+      onScroll();
+    }
   }
 
   document.addEventListener('DOMContentLoaded', init);

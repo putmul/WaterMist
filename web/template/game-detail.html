@@ -10,7 +10,7 @@
   <link rel="stylesheet" href="{{ url_for('frontend.static', filename='css/watermist.css') }}">
   <script src="{{ url_for('frontend.static', filename='js/layout.js') }}"></script>
 </head>
-<body data-page="game-detail">
+<body data-page="game-detail" data-authenticated="{{ 'true' if auth_user else 'false' }}">
   <div data-slot="topbar"></div>
 
   <main class="page">

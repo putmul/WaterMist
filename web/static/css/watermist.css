@@ -283,6 +283,10 @@ body[data-page="game-detail"] {
   margin-left: auto;
 }
 
+.topbar .logout-form { margin: 0; }
+.topbar .account-link { width: 44px; height: 44px; padding: 8px; }
+.topbar .account-link .ico { color: var(--ink); stroke: var(--ink); }
+
 .topbar .search input {
   width: 220px;
   height: 44px;
