@@ -1,0 +1,90 @@
+/* WaterMist — halaman Profil Akun. Dipakai bersama style.css + pages.css */
+
+:root {
+  --seg-1: #235670; --seg-2: #2f6f8f; --seg-3: #3f5f8a; --seg-4: #8db4c6;
+}
+[data-theme="dark"] {
+  --seg-1: #5fa6ac; --seg-2: #7fc4c9; --seg-3: #8fb0da; --seg-4: #3a5a6e;
+}
+
+.ico { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: square; shape-rendering: crispEdges; }
+.ico--fill { fill: currentColor; }
+
+/* Header */
+.page-header { position: relative; }
+.ornament { display: flex; align-items: center; gap: 12px; width: min(340px, 100%); margin: 12px auto; }
+.ornament::before, .ornament::after { content: ""; flex: 1; height: 2px; background: var(--ink); }
+.ornament i { width: 12px; height: 12px; border: var(--border); transform: rotate(45deg); }
+.header-action { position: absolute; right: 0; bottom: 40px; }
+
+/* Grid 2x2 */
+.profile-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 32px; }
+.pcard { padding: 24px; }
+.pcard-title { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; font-size: 24px; }
+.pcard-title .ico { width: 28px; height: 28px; color: var(--tide); }
+.divider { margin: 16px 0; border-top: 2px dashed var(--overcast); }
+
+/* Identitas */
+.identity { display: grid; grid-template-columns: 160px minmax(0, 1fr); gap: 24px; align-items: center; }
+.avatar { display: block; width: 160px; aspect-ratio: 1; object-fit: cover; border: var(--border); background: var(--haze); }
+.avatar { display: grid; place-items: center; color: var(--tide); font-size: 64px; font-family: var(--font-heading); }
+.name-row { display: flex; align-items: center; gap: 12px; }
+.name-row h2 { font-size: 32px; line-height: 1.1; }
+.icon-btn {
+  display: grid; place-items: center; width: 44px; height: 44px; flex: none;
+  border: var(--border); background: var(--fog); color: var(--tide); cursor: pointer;
+}
+.icon-btn:hover { background: var(--haze); }
+.since { margin-top: 8px; font-size: 18px; }
+.pref-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; list-style: none; }
+.pref-tag { padding: 6px 16px; border: var(--border); background: var(--fog); }
+
+/* Preferensi (donut SVG, tanpa gradient) */
+.pref { display: grid; grid-template-columns: 160px minmax(0, 1fr); gap: 24px; align-items: center; }
+.donut { position: relative; width: 160px; height: 160px; }
+.donut svg.chart { display: block; width: 100%; height: 100%; }
+.donut circle { fill: none; stroke-width: 6; shape-rendering: crispEdges; }
+.donut .ico { position: absolute; inset: 0; width: 40px; height: 40px; margin: auto; color: var(--tide); }
+.legend { display: grid; gap: 12px; list-style: none; }
+.legend li { display: flex; align-items: center; gap: 12px; }
+.legend .sw { width: 12px; height: 12px; border: var(--border); }
+.legend .lbl { flex: 1; }
+.legend strong { font-size: 18px; }
+
+/* Steam */
+.pcard > p { margin-bottom: 16px; }
+.steam-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 16px; align-items: stretch; }
+.steam-box { display: flex; align-items: center; gap: 16px; padding: 16px; border: var(--border); background: var(--fog); }
+.steam-box .ico { width: 56px; height: 56px; flex: none; }
+.steam-box strong { display: block; font-size: 20px; }
+.steam-box small { color: var(--overcast); font-size: 14px; }
+.steam-row .btn { max-width: 160px; text-align: center; }
+.steam-row form { display: flex; }
+.steam-connect { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px 16px; align-items: end; margin: 20px 0 16px; }
+.steam-connect label { grid-column: 1 / -1; }
+.steam-connect input { min-width: 0; width: 100%; padding: 10px 12px; border: var(--border); background: var(--fog); color: var(--ink); font: inherit; }
+
+/* Favorit */
+.fav-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.fav-foot { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 16px; font-size: 14px; }
+.fav-foot a { color: var(--tide); text-decoration: underline; }
+.fav-foot a:hover { color: var(--deep-tide); }
+.favorite-game { min-width: 0; }
+.favorite-game h3 { margin-top: 8px; overflow-wrap: anywhere; }
+.favorite-game .cover { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; border: var(--border); background: var(--haze); }
+.cover-placeholder { min-height: 70px; }
+.profile-flashes { margin: 0 auto 24px; }
+.profile-flashes p { padding: 12px 16px; border: var(--border); background: var(--fog); }
+
+@media (max-width: 1023px) {
+  .profile-grid { grid-template-columns: 1fr; }
+  .header-action { position: static; margin-top: 24px; }
+}
+@media (max-width: 767px) {
+  .identity, .pref { grid-template-columns: 1fr; justify-items: start; }
+  .steam-row { grid-template-columns: 1fr; }
+  .steam-row .btn { max-width: none; }
+  .steam-connect { grid-template-columns: 1fr; }
+  .steam-connect label { grid-column: auto; }
+  .fav-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}

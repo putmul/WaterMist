@@ -6,7 +6,7 @@ from flask import Blueprint, flash, redirect, render_template, request, url_for
 
 from app.auth import current_user, login_required
 from app.extensions import db
-from app.models import UserOwnedGame, UserPreference
+from app.models import UserFavorite, UserOwnedGame, UserPreference
 from app.services.recommendation_service import RecommendationService
 from app.services.steam_service import SteamProfilePrivateError, SteamService, SteamServiceError
 
@@ -33,6 +33,33 @@ def profile():
         .order_by(UserPreference.source, UserPreference.preference_score.desc())
         .all()
     )
+    favorite_rows = (
+        UserFavorite.query.filter_by(user_id=user.id)
+        .order_by(UserFavorite.created_at.desc())
+        .limit(4)
+        .all()
+    )
+    favorite_games = [favorite.game for favorite in favorite_rows if favorite.game]
+    genre_scores = {}
+    for preference in preferences:
+        if preference.feature_type.lower() in {"genre", "genres"}:
+            genre_scores[preference.feature_key] = genre_scores.get(
+                preference.feature_key, 0
+            ) + max(preference.preference_score, 0)
+    genre_preferences = sorted(
+        genre_scores.items(), key=lambda item: item[1], reverse=True
+    )[:4]
+    genre_total = sum(score for _, score in genre_preferences)
+    if genre_total:
+        genre_chart = [
+            {
+                "label": label,
+                "percent": round(score / genre_total * 100),
+            }
+            for label, score in genre_preferences
+        ]
+    else:
+        genre_chart = []
     return render_template(
         "profile.html",
         user=user,
@@ -43,6 +70,8 @@ def profile():
         steam_preference_total=sum(
             preference.source == "steam" for preference in preferences
         ),
+        favorite_games=favorite_games,
+        genre_chart=genre_chart,
     )
 
 

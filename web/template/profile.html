@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Profil Akun — WaterMist</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('frontend.static', filename='css/watermist.css') }}">
+  <link rel="stylesheet" href="{{ url_for('frontend.static', filename='css/profile.css') }}">
+  <script src="{{ url_for('frontend.static', filename='js/layout.js') }}"></script>
+</head>
+<!-- data-auth="user" → tombol topbar menjadi Logout -->
+<body data-page="profile" data-authenticated="true">
+
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+    <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 3l3 6 6 1-4.5 4.5 1 6.5L12 18l-5.5 3 1-6.5L3 10l6-1z"/></symbol>
+    <symbol id="i-heart" viewBox="0 0 24 24"><path d="M12 20l-8-8V7l3-2h3l2 2 2-2h3l3 2v5z"/></symbol>
+    <symbol id="i-gear" viewBox="0 0 24 24"><rect x="8" y="8" width="8" height="8"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.5 5.5l2 2M16.5 16.5l2 2M18.5 5.5l-2 2M7.5 16.5l-2 2"/></symbol>
+    <symbol id="i-pencil" viewBox="0 0 24 24"><path d="M4 20l1-5L16 4l4 4L9 19z"/></symbol>
+    <symbol id="i-pad" viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="9"/><path d="M7 11v3M5.5 12.5h3"/><rect x="15" y="11" width="2" height="2"/></symbol>
+    <symbol id="i-steam" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18"/><rect x="13" y="7" width="5" height="5"/><path d="M5 14l5 2"/></symbol>
+  </defs></svg>
+
+  <div class="scene" aria-hidden="true">
+    <span class="cloud c1"></span><span class="cloud c2"></span><span class="cloud c3"></span><span class="cloud c4"></span>
+  </div>
+
+  <div data-slot="topbar"></div>
+
+  <main class="page">
+    {% with messages = get_flashed_messages(with_categories=true) %}{% if messages %}<div class="container profile-flashes" role="status">{% for category, message in messages %}<p class="flash flash-{{ category }}">{{ message }}</p>{% endfor %}</div>{% endif %}{% endwith %}
+    <header class="page-header container">
+      <h1>Profil Akun</h1>
+      <div class="ornament" aria-hidden="true"><i></i></div>
+      <p>Kelola akun dan preferensimu di WaterMist.</p>
+      <a class="btn btn-secondary header-action" href="#steam">
+        <svg class="ico" aria-hidden="true"><use href="#i-gear"/></svg> Pengaturan Akun
+      </a>
+    </header>
+
+    <div class="container page-body">
+      <div class="profile-grid">
+
+        <!-- 1. Identitas -->
+        <section class="pcard frame" aria-label="Identitas">
+          <div class="identity">
+            <div class="avatar" aria-hidden="true">{{ (user.username or user.email)[0]|upper }}</div>
+            <div>
+              <div class="name-row">
+                  <h2>{{ user.username or user.email.split('@')[0] }}</h2>
+              </div>
+              <p class="since">Member sejak {{ user.created_at.strftime('%d %b %Y') }}</p>
+              <div class="divider"></div>
+              <p>Preferensi utama:</p>
+              <ul class="pref-tags">
+                {% for preference in genre_chart %}<li class="pref-tag">{{ preference.label }}</li>{% endfor %}
+                {% if not genre_chart %}<li class="pref-tag">Belum ada preferensi</li>{% endif %}
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        <!-- 2. Preferensi bermain -->
+        <section class="pcard frame" aria-labelledby="h-pref">
+          <h2 class="pcard-title" id="h-pref"><svg class="ico" aria-hidden="true"><use href="#i-star"/></svg> Preferensi Bermain</h2>
+          <div class="pref">
+            <div class="donut">
+              <svg class="chart" viewBox="0 0 42 42" role="img" aria-label="Diagram preferensi bermain">
+                {% set colors = ['var(--seg-1)', 'var(--seg-2)', 'var(--seg-3)', 'var(--seg-4)'] %}
+                {% set ns = namespace(offset=25) %}
+                {% for item in genre_chart %}<circle cx="21" cy="21" r="15.9155" stroke="{{ colors[loop.index0] }}" stroke-dasharray="{{ item.percent }} {{ 100-item.percent }}" stroke-dashoffset="{{ -ns.offset }}"/>{% set ns.offset = ns.offset + item.percent %}{% endfor %}
+              </svg>
+              <svg class="ico" aria-hidden="true"><use href="#i-pad"/></svg>
+            </div>
+            <ul class="legend">
+              {% for item in genre_chart %}<li><span class="sw" style="background:{{ colors[loop.index0] }}"></span><span class="lbl">{{ item.label }}</span><strong>{{ item.percent }}%</strong></li>{% else %}<li>Belum ada preferensi genre.</li>{% endfor %}
+            </ul>
+          </div>
+        </section>
+
+        <!-- 3. Akun Steam -->
+        <section class="pcard frame" id="steam" aria-labelledby="h-steam">
+          <h2 class="pcard-title" id="h-steam"><svg class="ico" aria-hidden="true"><use href="#i-steam"/></svg> Akun Steam</h2>
+          <p>Terhubung dengan Steam untuk sinkronisasi wishlist dan riwayat bermainmu.</p>
+          {% if user.steam_profile %}<div class="steam-row">
+            <div class="steam-box">
+              <svg class="ico" aria-hidden="true"><use href="#i-steam"/></svg>
+              <div><strong>{{ user.steam_profile.steam_id }}</strong><small>Status: {{ user.steam_profile.sync_status }} · {{ user.steam_profile.visibility_status }}{% if user.steam_profile.last_synced_at %} · Sinkronisasi: {{ user.steam_profile.last_synced_at.strftime('%d %b %Y %H:%M') }}{% endif %}</small></div>
+            </div>
+            <form method="post" action="{{ url_for('profile.disconnect_steam') }}"><button class="btn btn-secondary" type="submit">Putuskan Koneksi</button></form>
+          </div>{% else %}<p>Belum ada akun Steam yang terhubung.</p>{% endif %}
+          <form class="steam-connect" method="post" action="{{ url_for('profile.connect_steam') }}">
+            <label for="steam_profile">SteamID64 atau URL profil Steam</label>
+            <input id="steam_profile" name="steam_profile" placeholder="7656119... atau https://steamcommunity.com/id/..." required>
+            <button class="btn btn-primary" type="submit">{{ 'Sinkronkan Steam' if user.steam_profile else 'Hubungkan Steam' }}</button>
+          </form>
+          <p>Library: {{ owned_total }} game · terpetakan: {{ mapped_total }} · metadata lengkap: {{ metadata_ready }}.</p>
+        </section>
+
+        <!-- 4. Game favorit -->
+        <section class="pcard frame" aria-labelledby="h-fav">
+          <h2 class="pcard-title" id="h-fav"><svg class="ico ico--fill" aria-hidden="true"><use href="#i-heart"/></svg> Game Favorit</h2>
+          <div class="fav-grid">
+            {% for game in favorite_games %}<article class="favorite-game">{% if game.cover_image %}<img class="cover" src="{{ game.cover_image }}" alt="Cover {{ game.name }}" loading="lazy">{% else %}<div class="cover cover-placeholder" aria-hidden="true"></div>{% endif %}<h3>{{ game.name }}</h3></article>{% else %}<p>Belum ada game favorit.</p>{% endfor %}
+          </div>
+          <div class="fav-foot">
+            <span>{{ user.favorites|length }} game dalam daftar favorit</span>
+            <a href="{{ url_for('recommendations.recommendations') }}">Jelajahi rekomendasi →</a>
+          </div>
+        </section>
+
+      </div>
+    </div>
+
+    <div data-slot="footer"></div>
+  </main>
+
+</body>
+</html>
