@@ -217,6 +217,46 @@ class PersonalizationTests(unittest.TestCase):
         ).all()
         self.assertEqual([item.feature_key for item in quiz_preferences], ["rpg"])
 
+    def test_new_quiz_payload_persists_all_answers_and_rebuilds_quiz_signals(self):
+        client = self.app.test_client()
+        client.post(
+            "/auth/register",
+            data={"email": "full-quiz@example.com", "password": "password123"},
+        )
+        payload = {
+            "genre": ["RPG", "Action"],
+            "activity": ["Eksplorasi"],
+            "mode": ["Single Player"],
+            "session": ["1-2"],
+            "budget": ["<50"],
+        }
+        with patch.object(RecommendationService, "generate_for_user") as generate:
+            response = client.post("/onboarding/quiz", json=payload)
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.json["success"])
+        user = User.query.filter_by(email="full-quiz@example.com").one()
+        answers = {answer.question_key: answer.answer_value for answer in user.quiz_answers}
+        self.assertEqual(answers["genre"], "rpg,action")
+        self.assertEqual(answers["activity"], "eksplorasi")
+        self.assertEqual(answers["mode"], "single player")
+        self.assertEqual(answers["session"], "1-2")
+        self.assertEqual(answers["budget"], "<50")
+        quiz_signals = UserPreference.query.filter_by(user_id=user.id, source="quiz").all()
+        self.assertEqual({(item.feature_type, item.feature_key) for item in quiz_signals}, {
+            ("genre", "rpg"), ("genre", "action"), ("tag", "eksplorasi")
+        })
+        generate.assert_called_once_with(user)
+
+    def test_new_quiz_payload_rejects_invalid_answers(self):
+        client = self.app.test_client()
+        client.post(
+            "/auth/register",
+            data={"email": "invalid-quiz@example.com", "password": "password123"},
+        )
+        response = client.post("/onboarding/quiz", json={"genre": ["Not a genre"]})
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("error", response.json)
+
     def test_steam_connect_refreshes_recommendations_immediately(self):
         client = self.app.test_client()
         client.post(

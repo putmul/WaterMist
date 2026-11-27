@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Quiz Preferensi — WaterMist</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('frontend.static', filename='css/watermist.css') }}">
+  <link rel="stylesheet" href="{{ url_for('frontend.static', filename='css/quiz.css') }}">
+  <script src="{{ url_for('frontend.static', filename='js/layout.js') }}"></script>
+</head>
+  <body data-page="quiz" data-quiz-answers='{{ quiz_answers|tojson|forceescape }}' data-quiz-endpoint="{{ url_for('onboarding.quiz') }}" data-recommendations-url="{{ url_for('recommendations.recommendations') }}">
+
+  <div class="scene" aria-hidden="true">
+    <span class="cloud c1"></span><span class="cloud c2"></span><span class="cloud c3"></span><span class="cloud c4"></span>
+  </div>
+
+  <div data-slot="topbar"></div>
+
+  <main class="page">
+
+    <!-- Pertanyaan (diisi js/quiz.js) -->
+    <div id="quiz">
+      <header class="quiz-head container" aria-live="polite">
+        <ol class="steps" id="steps" aria-label="Langkah quiz"></ol>
+        <h1 class="quiz-q" id="q" tabindex="-1"></h1>
+        <p class="quiz-hint" id="hint"></p>
+      </header>
+
+      <div class="container page-body">
+        {% with messages = get_flashed_messages(with_categories=true) %}{% for category, message in messages %}<p class="frame quiz-message" role="status">{{ message }}</p>{% endfor %}{% endwith %}
+        <section class="quiz-panel frame" aria-label="Pilihan jawaban">
+          <fieldset class="opts" id="opts" aria-labelledby="q"></fieldset>
+          <div class="quiz-nav">
+            <button class="btn btn-secondary" id="back" type="button">← Kembali</button>
+          <button class="btn btn-primary" id="next" type="button">Selanjutnya →</button>
+          <p id="quiz-error" class="quiz-error" role="alert" hidden></p>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <!-- Hasil -->
+    <section class="done" id="done" hidden aria-live="polite">
+          <img src="{{ url_for('frontend.static', filename='assets/images/portal.png') }}" alt="Peti harta terbuka" width="320" height="320" onerror="this.hidden=true">
+      <div class="done-text">
+        <h2 id="done-title" tabindex="-1">Preferensimu berhasil disimpan!</h2>
+        <p>WaterMist telah mengenali selera bermainmu.</p>
+        <div class="ornament" aria-hidden="true"><i></i></div>
+        <h3>Ringkasan Preferensi</h3>
+        <ul class="sum-tags" id="summary"></ul>
+        <div class="done-actions">
+          <a class="btn btn-primary" href="{{ url_for('recommendations.recommendations') }}">Lihat Rekomendasi Game →</a>
+          <button class="btn btn-secondary" id="restart" type="button">Ulangi Quiz</button>
+        </div>
+      </div>
+    </section>
+
+    <div data-slot="footer"></div>
+  </main>
+
+  <script src="{{ url_for('frontend.static', filename='js/quiz.js') }}"></script>
+</body>
+</html>

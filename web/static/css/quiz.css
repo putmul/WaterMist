@@ -1,0 +1,68 @@
+/* WaterMist — Quiz preferensi. Dipakai bersama style.css + pages.css */
+
+.ornament { display: flex; align-items: center; gap: 12px; width: min(340px, 100%); margin: 12px auto; }
+.ornament::before, .ornament::after { content: ""; flex: 1; height: 2px; background: var(--ink); }
+.ornament i { width: 12px; height: 12px; border: var(--border); transform: rotate(45deg); }
+
+body.is-done .topbar { display: none; }
+
+/* Header + stepper */
+.quiz-head { padding: calc(var(--topbar) + 32px) 0 32px; text-align: center; }
+.steps { display: flex; justify-content: center; align-items: center; margin-bottom: 24px; list-style: none; }
+.step {
+  position: relative; display: grid; place-items: center; width: 36px; height: 36px; margin-right: 40px;
+  border: var(--border); background: var(--fog); font-weight: 600;
+}
+.step:last-child { margin-right: 0; }
+.step::after { content: ""; position: absolute; left: 100%; top: 50%; width: 40px; height: 2px; background: var(--ink); }
+.step:last-child::after { display: none; }
+.step.is-current { background: var(--tide); color: var(--fog); }
+.step.is-done { background: var(--haze); }
+.quiz-q { max-width: 760px; margin: 0 auto 8px; font-size: clamp(26px, 3vw, 32px); line-height: 1.2; }
+.quiz-q:focus { outline: none; }
+.quiz-hint { font-size: 18px; }
+.quiz-hint:empty { display: none; }
+
+/* Panel pilihan */
+.quiz-panel { width: 100%; max-width: 1040px; margin: 0 auto; padding: 32px; }
+.opts { display: grid; grid-template-columns: repeat(var(--cols, 3), minmax(0, 1fr)); gap: 16px; border: 0; }
+.opt {
+  position: relative; display: flex; min-height: 72px; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+  padding: 12px 16px; border: var(--border); background: var(--fog); color: var(--ink);
+  text-align: center; cursor: pointer;
+}
+.opt:hover { background: var(--haze); }
+.opt small { font-size: 12px; }
+.opt:has(input:checked) { background: var(--tide); color: var(--fog); }
+.opt:has(input:checked)::after { content: "✓"; position: absolute; top: 6px; right: 10px; }
+.opt:has(input:focus-visible) { outline: 2px solid var(--tide); outline-offset: 2px; }
+.opt:has(input:disabled) { opacity: .5; cursor: not-allowed; }
+
+.quiz-nav { display: flex; justify-content: space-between; gap: 16px; margin-top: 32px; }
+.quiz-error, .quiz-message { width: 100%; margin-top: 16px; padding: 12px; }
+.quiz-error { color: #9b2525; }
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+.btn:disabled:hover { transform: none; }
+
+/* Layar hasil */
+.done { display: grid; grid-template-columns: minmax(0, 320px) minmax(0, 1fr); gap: 48px; align-items: center; width: min(1000px, calc(100% - 48px)); min-height: 100vh; margin: 0 auto; }
+.done[hidden] { display: none; }
+.done img { display: block; width: 100%; image-rendering: pixelated; }
+.done-text { text-align: center; }
+.done-text h2 { font-size: clamp(32px, 4vw, 40px); line-height: 1.15; margin-bottom: 8px; }
+.done-text h2:focus { outline: none; }
+.done-text h3 { margin-bottom: 16px; font-size: 24px; }
+.sum-tags { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-bottom: 32px; list-style: none; }
+.sum-tags li { padding: 6px 16px; border: var(--border); background: var(--fog); }
+.done-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 16px; }
+
+@media (max-width: 1023px) {
+  .opts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 767px) {
+  .quiz-panel { padding: 20px; }
+  .step { margin-right: 16px; width: 32px; height: 32px; }
+  .step::after { width: 16px; }
+  .done { grid-template-columns: 1fr; gap: 24px; padding: 48px 0; }
+  .done img { max-width: 220px; margin: 0 auto; }
+}

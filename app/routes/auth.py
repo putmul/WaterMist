@@ -2,7 +2,7 @@
 
 import logging
 
-from flask import Blueprint, flash, redirect, render_template, request, session, url_for
+from flask import Blueprint, flash, jsonify, redirect, render_template, request, session, url_for
 
 from app.auth import current_user, login_required
 from app.extensions import db
@@ -111,54 +111,108 @@ def disconnect_steam():
 def quiz():
     user = current_user()
     if request.method == "POST":
-        genres = _values("genres")
-        tags = _values("tags")
-        if not genres and not tags:
-            flash("Pilih minimal satu genre atau tag.", "error")
-            return render_template("onboarding/quiz.html"), 400
+        # Keep accepting the previous form contract while the primary UI uses JSON.
+        if not request.is_json and (request.form.getlist("genres") or request.form.getlist("tags")):
+            genres, tags = _values("genres"), _values("tags")
+            if not genres and not tags:
+                flash("Pilih minimal satu genre atau tag.", "error")
+                return render_template("quiz.html", quiz_answers={}), 400
+            UserQuizAnswer.query.filter_by(user_id=user.id).delete()
+            UserPreference.query.filter_by(user_id=user.id, source="quiz").delete()
+            for key, values in (("genres", genres), ("tags", tags)):
+                if values:
+                    db.session.add(UserQuizAnswer(
+                        user_id=user.id, question_key=key,
+                        answer_value=",".join(normalize_feature_key(value) for value in values),
+                    ))
+                for value in values:
+                    db.session.add(UserPreference(
+                        user_id=user.id,
+                        feature_type="genre" if key == "genres" else "tag",
+                        feature_key=normalize_feature_key(value), preference_score=1.0,
+                        source="quiz", confidence=1.0,
+                    ))
+            user.preference_mode = "quiz"
+            user.onboarding_status = "quiz_completed"
+            db.session.commit()
+            RecommendationService().generate_for_user(user)
+            flash("Preferensi quiz berhasil disimpan.", "success")
+            return redirect(url_for("recommendations.recommendations"))
+        allowed = {
+            "genre": {"RPG", "Action", "Adventure", "Strategy", "Simulation", "Sports", "Racing", "Puzzle", "Indie", "Others"},
+            "activity": {"Eksplorasi", "Cerita", "Pertarungan", "Strategi", "Membangun", "Teka-teki"},
+            "mode": {"Single Player", "Multiplayer", "Keduanya"},
+            "session": {"<1", "1-2", "2-4", ">4", "varies"},
+            "budget": {"free", "<50", "50-100", "100-250", "250-500", ">500", "any"},
+        }
+        payload = request.get_json(silent=True) if request.is_json else request.form
+        answers = {}
+        for question_key, choices in allowed.items():
+            raw = payload.get(question_key, []) if payload else []
+            if isinstance(raw, str):
+                raw = raw.split(",") if "," in raw else [raw]
+            if not isinstance(raw, (list, tuple)):
+                raw = []
+            values = list(dict.fromkeys(
+                value for value in raw if isinstance(value, str) and value in choices
+            ))
+            maximum = 3 if question_key in {"genre", "activity"} else 1
+            if len(values) != len(raw) or len(values) > maximum:
+                message = "Jawaban quiz tidak valid. Periksa kembali pilihanmu."
+                if request.is_json:
+                    return jsonify(error=message), 400
+                flash(message, "error")
+                return render_template("quiz.html", quiz_answers={}), 400
+            answers[question_key] = values
+        if any(not values for values in answers.values()):
+            message = "Jawab semua pertanyaan sebelum menyimpan quiz."
+            if request.is_json:
+                return jsonify(error=message), 400
+            flash(message, "error")
+            return render_template("quiz.html", quiz_answers={}), 400
 
         UserQuizAnswer.query.filter_by(user_id=user.id).delete()
         UserPreference.query.filter_by(user_id=user.id, source="quiz").delete()
-        answers = {
-            "genres": ",".join(normalize_feature_key(value) for value in genres),
-            "tags": ",".join(normalize_feature_key(value) for value in tags),
-        }
-        for question_key, value in answers.items():
-            if value:
-                db.session.add(
-                    UserQuizAnswer(
-                        user_id=user.id, question_key=question_key, answer_value=value
-                    )
-                )
-        for value in genres:
-            db.session.add(
-                UserPreference(
-                    user_id=user.id,
-                    feature_type="genre",
-                    feature_key=normalize_feature_key(value),
-                    preference_score=1.0,
-                    source="quiz",
-                    confidence=1.0,
-                )
-            )
-        for value in tags:
-            db.session.add(
-                UserPreference(
-                    user_id=user.id,
-                    feature_type="tag",
-                    feature_key=normalize_feature_key(value),
-                    preference_score=1.0,
-                    source="quiz",
-                    confidence=1.0,
-                )
-            )
+        for question_key, values in answers.items():
+            db.session.add(UserQuizAnswer(
+                user_id=user.id,
+                question_key=question_key,
+                answer_value=",".join(normalize_feature_key(value) for value in values),
+            ))
+        for value in answers["genre"]:
+            db.session.add(UserPreference(
+                user_id=user.id, feature_type="genre",
+                feature_key=normalize_feature_key(value), preference_score=1.0,
+                source="quiz", confidence=1.0,
+            ))
+        for value in answers["activity"]:
+            db.session.add(UserPreference(
+                user_id=user.id, feature_type="tag",
+                feature_key=normalize_feature_key(value), preference_score=1.0,
+                source="quiz", confidence=1.0,
+            ))
         user.preference_mode = "quiz"
         user.onboarding_status = "quiz_completed"
         db.session.commit()
-        RecommendationService().generate_for_user(user)
+        try:
+            RecommendationService().generate_for_user(user)
+        except Exception:
+            db.session.rollback()
+            log.exception("Pembuatan rekomendasi gagal setelah quiz disimpan untuk user %s", user.id)
+            message = "Quiz tersimpan, tetapi rekomendasi belum berhasil diperbarui."
+            if request.is_json:
+                return jsonify(success=True, warning=message, redirect=url_for("recommendations.recommendations")), 202
+            flash(message, "warning")
+            return redirect(url_for("recommendations.recommendations"))
+        if request.is_json:
+            return jsonify(success=True, redirect=url_for("recommendations.recommendations"))
         flash("Preferensi quiz berhasil disimpan.", "success")
         return redirect(url_for("recommendations.recommendations"))
-    return render_template("onboarding/quiz.html")
+    existing = {
+        answer.question_key: answer.answer_value.split(",")
+        for answer in UserQuizAnswer.query.filter_by(user_id=user.id).all()
+    }
+    return render_template("quiz.html", quiz_answers=existing)
 
 
 def _values(field):
