@@ -12,6 +12,7 @@ from app.models import (
     UserOwnedGame,
     UserPreference,
 )
+from app.recommendation.preference_builder import build_profile_from_user
 from app.services.recommendation_service import RecommendationService
 from app.services.steam_service import SteamProfilePrivateError, SteamService
 
@@ -83,7 +84,7 @@ class PersonalizationTests(unittest.TestCase):
         self.context.pop()
 
     def test_anonymous_choice_matches_game_features(self):
-        result = RecommendationService().recommend(genres=["RPG"])
+        result = RecommendationService().recommend(genres=[" rPg "])
         self.assertEqual(result["mode"], "search")
         self.assertEqual(result["popular"][0]["game"].name, "RPG Test")
         self.assertGreater(result["popular"][0]["fit_score"], 0)
@@ -155,6 +156,35 @@ class PersonalizationTests(unittest.TestCase):
         self.assertTrue(steam_preferences)
         self.assertEqual(steam_preferences[0].feature_key, "rpg")
 
+    def test_all_preference_sources_share_case_insensitive_feature_identity(self):
+        user = User(email="case-insensitive@example.com", preference_mode="steam")
+        user.set_password("password123")
+        db.session.add(user)
+        db.session.flush()
+        for source, feature_type, feature_key in (
+            ("quiz", "GENRE", " RPG "),
+            ("steam", "Genre", "RPG"),
+            ("favorite", "genre", "rPg"),
+            ("interaction", "GENRES", "rpg "),
+        ):
+            db.session.add(
+                UserPreference(
+                    user_id=user.id,
+                    source=source,
+                    feature_type=feature_type,
+                    feature_key=feature_key,
+                    preference_score=1.0,
+                    confidence=1.0,
+                )
+            )
+        db.session.commit()
+
+        profile = build_profile_from_user(user)
+
+        # Steam mode intentionally selects steam + behavioral sources, not quiz.
+        self.assertEqual(set(profile), {"genre:rpg"})
+        self.assertEqual(profile["genre:rpg"], 3.0)
+
     def test_private_steam_library_falls_back_without_deleting_account(self):
         user = User(email="private@example.com")
         user.set_password("password123")
@@ -176,11 +206,16 @@ class PersonalizationTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         response = client.post(
             "/onboarding/quiz",
-            data={"genres": "RPG", "tags": "exploration"},
+            data={"genres": "RPG,rpg, RPG ", "tags": "Exploration"},
             follow_redirects=True,
         )
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"RPG Test", response.data)
+        user = User.query.filter_by(email="route@example.com").one()
+        quiz_preferences = UserPreference.query.filter_by(
+            user_id=user.id, source="quiz", feature_type="genre"
+        ).all()
+        self.assertEqual([item.feature_key for item in quiz_preferences], ["rpg"])
 
     def test_steam_connect_refreshes_recommendations_immediately(self):
         client = self.app.test_client()

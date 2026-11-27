@@ -7,6 +7,7 @@ from flask import Blueprint, flash, redirect, render_template, request, session,
 from app.auth import current_user, login_required
 from app.extensions import db
 from app.models import User, UserPreference, UserQuizAnswer
+from app.recommendation.normalization import normalize_feature_key
 from app.services.recommendation_service import RecommendationService
 from app.services.steam_service import SteamProfilePrivateError, SteamService, SteamServiceError
 from app.utils.time import local_now
@@ -117,8 +118,8 @@ def quiz():
         UserQuizAnswer.query.filter_by(user_id=user.id).delete()
         UserPreference.query.filter_by(user_id=user.id, source="quiz").delete()
         answers = {
-            "genres": ",".join(genres),
-            "tags": ",".join(tags),
+            "genres": ",".join(normalize_feature_key(value) for value in genres),
+            "tags": ",".join(normalize_feature_key(value) for value in tags),
         }
         for question_key, value in answers.items():
             if value:
@@ -132,7 +133,7 @@ def quiz():
                 UserPreference(
                     user_id=user.id,
                     feature_type="genre",
-                    feature_key=value,
+                    feature_key=normalize_feature_key(value),
                     preference_score=1.0,
                     source="quiz",
                     confidence=1.0,
@@ -143,7 +144,7 @@ def quiz():
                 UserPreference(
                     user_id=user.id,
                     feature_type="tag",
-                    feature_key=value,
+                    feature_key=normalize_feature_key(value),
                     preference_score=1.0,
                     source="quiz",
                     confidence=1.0,
@@ -162,4 +163,12 @@ def _values(field):
     values = request.form.getlist(field)
     if len(values) == 1 and "," in values[0]:
         values = values[0].split(",")
-    return [value.strip() for value in values if value.strip()][:30]
+    normalized = []
+    seen = set()
+    for value in values:
+        value = value.strip()
+        key = normalize_feature_key(value)
+        if key and key not in seen:
+            normalized.append(value)
+            seen.add(key)
+    return normalized[:30]

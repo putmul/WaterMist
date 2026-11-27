@@ -94,7 +94,7 @@
           <form class="steam-connect" method="post" action="{{ url_for('profile.connect_steam') }}">
             <label for="steam_profile">SteamID64 atau URL profil Steam</label>
             <input id="steam_profile" name="steam_profile" placeholder="7656119... atau https://steamcommunity.com/id/..." required>
-            <button class="btn btn-primary" type="submit">{{ 'Sinkronkan Steam' if user.steam_profile else 'Hubungkan Steam' }}</button>
+            <button class="btn btn-primary" type="submit">{{ 'Sinkronkan Steam' if user.steam_profile else 'Hubungkan/sinkronkan Steam' }}</button>
           </form>
           <p>Library: {{ owned_total }} game · terpetakan: {{ mapped_total }} · metadata lengkap: {{ metadata_ready }}.</p>
         </section>

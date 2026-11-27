@@ -2,6 +2,7 @@
 
 from app.recommendation.similarity import feature_choice_vector
 from app.models import UserPreference
+from app.recommendation.normalization import normalize_feature
 
 
 def build_profile_from_choices(genres=None, tags=None):
@@ -23,7 +24,10 @@ def build_profile_from_user(user):
         UserPreference.source.in_(active_sources),
     ).all()
     for preference in preferences:
-        key = f"{preference.feature_type}:{preference.feature_key.lower().strip()}"
+        feature_type, feature_key = normalize_feature(
+            preference.feature_type, preference.feature_key
+        )
+        key = f"{feature_type}:{feature_key}"
         profile[key] = profile.get(key, 0.0) + max(
             0.0, preference.preference_score * preference.confidence
         )

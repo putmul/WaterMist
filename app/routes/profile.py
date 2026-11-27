@@ -7,6 +7,7 @@ from flask import Blueprint, flash, redirect, render_template, request, url_for
 from app.auth import current_user, login_required
 from app.extensions import db
 from app.models import UserFavorite, UserOwnedGame, UserPreference
+from app.recommendation.normalization import normalize_feature
 from app.services.recommendation_service import RecommendationService
 from app.services.steam_service import SteamProfilePrivateError, SteamService, SteamServiceError
 
@@ -41,11 +42,16 @@ def profile():
     )
     favorite_games = [favorite.game for favorite in favorite_rows if favorite.game]
     genre_scores = {}
+    genre_labels = {}
     for preference in preferences:
-        if preference.feature_type.lower() in {"genre", "genres"}:
-            genre_scores[preference.feature_key] = genre_scores.get(
-                preference.feature_key, 0
+        feature_type, feature_key = normalize_feature(
+            preference.feature_type, preference.feature_key
+        )
+        if feature_type in {"genre", "genres"}:
+            genre_scores[feature_key] = genre_scores.get(
+                feature_key, 0
             ) + max(preference.preference_score, 0)
+            genre_labels.setdefault(feature_key, preference.feature_key.strip())
     genre_preferences = sorted(
         genre_scores.items(), key=lambda item: item[1], reverse=True
     )[:4]
@@ -53,7 +59,7 @@ def profile():
     if genre_total:
         genre_chart = [
             {
-                "label": label,
+                "label": genre_labels[label],
                 "percent": round(score / genre_total * 100),
             }
             for label, score in genre_preferences
