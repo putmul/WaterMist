@@ -35,7 +35,7 @@
       <h1>Profil Akun</h1>
       <div class="ornament" aria-hidden="true"><i></i></div>
       <p>Kelola akun dan preferensimu di WaterMist.</p>
-      <a class="btn btn-secondary header-action" href="#steam">
+      <a class="btn btn-secondary header-action" href="{{ url_for('profile.settings') }}">
         <svg class="ico" aria-hidden="true"><use href="#i-gear"/></svg> Pengaturan Akun
       </a>
     </header>
@@ -89,13 +89,7 @@
               <svg class="ico" aria-hidden="true"><use href="#i-steam"/></svg>
               <div><strong>{{ user.steam_profile.steam_id }}</strong><small>Status: {{ user.steam_profile.sync_status }} · {{ user.steam_profile.visibility_status }}{% if user.steam_profile.last_synced_at %} · Sinkronisasi: {{ user.steam_profile.last_synced_at.strftime('%d %b %Y %H:%M') }}{% endif %}</small></div>
             </div>
-            <form method="post" action="{{ url_for('profile.disconnect_steam') }}"><button class="btn btn-secondary" type="submit">Putuskan Koneksi</button></form>
           </div>{% else %}<p>Belum ada akun Steam yang terhubung.</p>{% endif %}
-          <form class="steam-connect" method="post" action="{{ url_for('profile.connect_steam') }}">
-            <label for="steam_profile">SteamID64 atau URL profil Steam</label>
-            <input id="steam_profile" name="steam_profile" placeholder="7656119... atau https://steamcommunity.com/id/..." required>
-            <button class="btn btn-primary" type="submit">{{ 'Sinkronkan Steam' if user.steam_profile else 'Hubungkan/sinkronkan Steam' }}</button>
-          </form>
           <p>Library: {{ owned_total }} game · terpetakan: {{ mapped_total }} · metadata lengkap: {{ metadata_ready }}.</p>
         </section>
 

@@ -242,7 +242,56 @@ class PersonalizationTests(unittest.TestCase):
         )
         response = client.get("/profile")
         self.assertEqual(response.status_code, 200)
-        self.assertIn(b"Hubungkan/sinkronkan Steam", response.data)
+        self.assertIn(b"Akun Steam", response.data)
+
+    def test_settings_page_requires_login_and_renders_user_data(self):
+        client = self.app.test_client()
+        self.assertEqual(client.get("/profile/settings").status_code, 401)
+        client.post(
+            "/auth/register",
+            data={"email": "settings@example.com", "password": "password123"},
+        )
+        user = User.query.filter_by(email="settings@example.com").one()
+        user.username = "SettingsUser"
+        db.session.commit()
+        response = client.get("/profile/settings")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b"SettingsUser", response.data)
+        self.assertIn(b"settings.css", response.data)
+
+    def test_settings_update_username_and_password(self):
+        client = self.app.test_client()
+        client.post(
+            "/auth/register",
+            data={"email": "settings-update@example.com", "password": "password123"},
+        )
+        response = client.post(
+            "/profile/settings/username", data={"username": "UpdatedUser"}
+        )
+        self.assertEqual(response.status_code, 302)
+        response = client.post(
+            "/profile/settings/password",
+            data={"current_password": "password123", "new_password": "newpassword123"},
+        )
+        self.assertEqual(response.status_code, 302)
+        user = User.query.filter_by(email="settings-update@example.com").one()
+        self.assertEqual(user.username, "UpdatedUser")
+        self.assertTrue(user.check_password("newpassword123"))
+
+    def test_settings_rejects_invalid_username_and_wrong_current_password(self):
+        client = self.app.test_client()
+        client.post(
+            "/auth/register",
+            data={"email": "settings-invalid@example.com", "password": "password123"},
+        )
+        client.post("/profile/settings/username", data={"username": "ab"})
+        client.post(
+            "/profile/settings/password",
+            data={"current_password": "wrong-password", "new_password": "newpassword123"},
+        )
+        user = User.query.filter_by(email="settings-invalid@example.com").one()
+        self.assertIsNone(user.username)
+        self.assertTrue(user.check_password("password123"))
 
 
 if __name__ == "__main__":

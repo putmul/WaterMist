@@ -6,7 +6,7 @@ from flask import Blueprint, flash, redirect, render_template, request, url_for
 
 from app.auth import current_user, login_required
 from app.extensions import db
-from app.models import UserFavorite, UserOwnedGame, UserPreference
+from app.models import User, UserFavorite, UserOwnedGame, UserPreference
 from app.recommendation.normalization import normalize_feature
 from app.services.recommendation_service import RecommendationService
 from app.services.steam_service import SteamProfilePrivateError, SteamService, SteamServiceError
@@ -14,6 +14,45 @@ from app.services.steam_service import SteamProfilePrivateError, SteamService, S
 
 log = logging.getLogger(__name__)
 profile_bp = Blueprint("profile", __name__, url_prefix="/profile")
+
+
+@profile_bp.get("/settings")
+@login_required
+def settings():
+    return render_template("settings.html", user=current_user())
+
+
+@profile_bp.post("/settings/username")
+@login_required
+def update_username():
+    user = current_user()
+    username = request.form.get("username", "").strip()
+    if len(username) < 3 or len(username) > 80:
+        flash("Username harus terdiri dari 3 sampai 80 karakter.", "error")
+    elif User.query.filter(User.username == username, User.id != user.id).first():
+        flash("Username tersebut sudah digunakan.", "error")
+    else:
+        user.username = username
+        db.session.commit()
+        flash("Username berhasil diperbarui.", "success")
+    return redirect(url_for("profile.settings"))
+
+
+@profile_bp.post("/settings/password")
+@login_required
+def update_password():
+    user = current_user()
+    current_password = request.form.get("current_password", "")
+    new_password = request.form.get("new_password", "")
+    if not user.check_password(current_password):
+        flash("Password saat ini tidak cocok.", "error")
+    elif len(new_password) < 8:
+        flash("Password baru minimal 8 karakter.", "error")
+    else:
+        user.set_password(new_password)
+        db.session.commit()
+        flash("Password berhasil diperbarui.", "success")
+    return redirect(url_for("profile.settings"))
 
 
 @profile_bp.get("")

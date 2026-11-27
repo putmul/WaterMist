@@ -23,7 +23,7 @@ onboarding_bp = Blueprint("onboarding", __name__, url_prefix="/onboarding")
 @auth_bp.route("/register", methods=["GET", "POST"])
 def register():
     if current_user() is not None:
-        return redirect(url_for("recommendations.recommendations"))
+        return redirect(url_for("deals.deals"))
     if request.method == "POST":
         email = request.form.get("email", "").strip().lower()
         password = request.form.get("password", "")
@@ -45,6 +45,8 @@ def register():
 
 @auth_bp.route("/login", methods=["GET", "POST"])
 def login():
+    if current_user() is not None:
+        return redirect(url_for("deals.deals"))
     if request.method == "POST":
         email = request.form.get("email", "").strip().lower()
         user = User.query.filter_by(email=email, status="active").one_or_none()
@@ -55,7 +57,7 @@ def login():
         db.session.commit()
         session.clear()
         session["user_id"] = user.id
-        return redirect(url_for("recommendations.recommendations"))
+        return redirect(url_for("deals.deals"))
     return render_template("login.html")
 
 

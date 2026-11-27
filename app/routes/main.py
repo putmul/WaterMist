@@ -2,12 +2,15 @@ from flask import Blueprint, flash, redirect, render_template, url_for
 
 from app.services.deal_service import DealService
 from app.services.game_service import GameService
+from app.auth import current_user
 
 main_bp = Blueprint("main", __name__)
 
 
 @main_bp.get("/")
 def dashboard():
+    if current_user() is not None:
+        return redirect(url_for("deals.deals"))
     return render_template("index.html")
 
 

@@ -670,6 +670,7 @@ main {
 }
 .game-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 32px 24px; }
 .game-grid--2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.game-grid--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .game-grid--2.is-list { grid-template-columns: 1fr; }
 
 .game { display: flex; flex-direction: column; gap: 8px; padding: 12px; }

@@ -1,0 +1,60 @@
+/* WaterMist — halaman Pengaturan Akun. Dipakai bersama style.css + pages.css */
+
+.ico { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: square; shape-rendering: crispEdges; }
+
+.ornament { display: flex; align-items: center; gap: 12px; width: min(340px, 100%); margin: 12px auto; }
+.ornament::before, .ornament::after { content: ""; flex: 1; height: 2px; background: var(--ink); }
+.ornament i { width: 12px; height: 12px; border: var(--border); transform: rotate(45deg); }
+
+.settings { width: 100%; max-width: 880px; margin: 0 auto; padding: 8px 40px; }
+.settings-page-actions { display: flex; justify-content: flex-end; max-width: 880px; margin: 0 auto 12px; }
+
+.setting {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) auto;
+  gap: 24px;
+  align-items: center;
+  padding: 24px 0;
+  border-bottom: 2px dashed var(--overcast);
+}
+.setting:last-child { border-bottom: 0; }
+.setting > .ico { width: 44px; height: 44px; color: var(--tide); }
+.setting h2 { margin-bottom: 4px; font-size: 22px; line-height: 1.2; }
+.setting p { color: var(--ink); }
+
+.setting-action { display: flex; align-items: center; gap: 16px; }
+.setting-action form { display: flex; align-items: center; gap: 12px; }
+.setting-password { grid-template-columns: 48px minmax(0, 1fr); }
+.setting-password .setting-action {
+  grid-column: 2;
+  flex-direction: column;
+  align-items: stretch;
+  width: 100%;
+  min-width: 0;
+}
+.setting-password .setting-action .input { width: 100%; min-width: 0; }
+.setting-password .setting-action .btn { align-self: flex-end; }
+.setting-action .input { width: 320px; height: 48px; font-size: 16px; }
+.setting-action .btn { min-width: 128px; }
+
+.form-msg { margin-top: 4px; font-size: 14px; }
+.form-msg:empty { display: none; }
+.form-msg.is-error { color: var(--coral); }
+.form-msg.is-ok { color: var(--rain); }
+.settings-messages { width: min(880px, calc(100% - 40px)); margin: 0 auto 20px; }
+.flash { padding: 10px 14px; border: var(--border); background: var(--cloud); }
+.flash-error { color: var(--coral); }
+.flash-success { color: var(--rain); }
+
+@media (max-width: 1023px) {
+  .setting-action .input { width: 220px; }
+}
+@media (max-width: 767px) {
+  .settings { padding: 8px 20px; }
+  .setting { grid-template-columns: 40px minmax(0, 1fr); gap: 16px; }
+  .setting > .ico { width: 36px; height: 36px; }
+  .setting-action { grid-column: 1 / -1; flex-wrap: wrap; }
+  .setting-password .setting-action { grid-column: 2; flex-wrap: nowrap; }
+  .setting-action form { flex-wrap: wrap; width: 100%; }
+  .setting-action .input { flex: 1; width: auto; min-width: 0; }
+}

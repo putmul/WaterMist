@@ -12,7 +12,7 @@
   <div data-slot="topbar"></div>
   <main class="page"><header class="page-header container"><h1>Recently Released</h1><p>Game yang dirilis dalam {{ days }} hari terakhir.</p></header>
     <div class="container page-body">
-      <form class="toolbar" action="{{ url_for('releases.releases') }}" method="get" style="margin-bottom:24px">
+      <form class="frame deals-filters" action="{{ url_for('releases.releases') }}" method="get">
         <input class="input" type="search" name="q" value="{{ q }}" placeholder="Cari game terbaru..." aria-label="Cari game terbaru">
         <select class="select" name="mode" aria-label="Urutkan rilis"><option value="latest" {% if mode == 'latest' %}selected{% endif %}>Terbaru</option><option value="preference" {% if mode == 'preference' %}selected{% endif %}>Untukmu</option></select>
         <button class="btn btn-primary" type="submit">Cari</button>

@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pengaturan Akun — WaterMist</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('frontend.static', filename='css/watermist.css') }}">
+  <link rel="stylesheet" href="{{ url_for('frontend.static', filename='css/settings.css') }}">
+  <script src="js/layout.js"></script>
+</head>
+<body data-page="settings" data-authenticated="{{ 'true' if auth_user else 'false' }}">
+
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+    <symbol id="i-user" viewBox="0 0 24 24"><rect x="8" y="3" width="8" height="8"/><path d="M4 21v-4h16v4"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10"/><path d="M8 11V6h8v5"/></symbol>
+    <symbol id="i-steam" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18"/><rect x="13" y="7" width="5" height="5"/><path d="M5 14l5 2"/></symbol>
+    <symbol id="i-logout" viewBox="0 0 24 24"><path d="M9 4H4v16h5"/><path d="M10 12h10M16 8l4 4-4 4"/></symbol>
+  </defs></svg>
+
+  <div class="scene" aria-hidden="true">
+    <span class="cloud c1"></span><span class="cloud c2"></span><span class="cloud c3"></span><span class="cloud c4"></span>
+  </div>
+
+  <div data-slot="topbar"></div>
+
+  <main class="page">
+    <header class="page-header container">
+      <h1>Pengaturan Akun</h1>
+      <div class="ornament" aria-hidden="true"><i></i></div>
+      <p>Kelola informasi akun dan preferensi Anda.</p>
+    </header>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}<div class="settings-messages" role="status" aria-live="polite">{% for category, message in messages %}<p class="flash flash-{{ category }}">{{ message }}</p>{% endfor %}</div>{% endif %}
+    {% endwith %}
+
+    <div class="container page-body">
+      <div class="settings-page-actions">
+        <a class="btn btn-secondary" href="{{ url_for('profile.profile') }}">Kembali</a>
+      </div>
+      <section class="settings frame" aria-label="Pengaturan akun">
+        <!-- Username -->
+        <form class="setting" method="post" action="{{ url_for('profile.update_username') }}">
+          <svg class="ico" aria-hidden="true"><use href="#i-user"/></svg>
+          <div>
+            <h2>Ubah Username</h2>
+            <p id="d-username">Ganti nama pengguna Anda.</p>
+          </div>
+          <div class="setting-action">
+            <label class="sr-only" for="username">Username baru</label>
+          <input class="input" id="username" name="username" type="text" value="{{ user.username or '' }}" minlength="3" maxlength="80" required autocomplete="username" aria-describedby="d-username">
+            <button class="btn btn-secondary" type="submit">Simpan</button>
+          </div>
+        </form>
+
+        <!-- Password -->
+        <form class="setting setting-password" method="post" action="{{ url_for('profile.update_password') }}">
+          <svg class="ico" aria-hidden="true"><use href="#i-lock"/></svg>
+          <div>
+            <h2>Ubah Password</h2>
+            <p id="d-password">Gunakan password baru untuk akun Anda.</p>
+          </div>
+          <div class="setting-action">
+            <label class="sr-only" for="password">Password baru</label>
+            <input class="input" id="current-password" name="current_password" type="password" placeholder="Password saat ini" required autocomplete="current-password" aria-describedby="d-password">
+            <input class="input" id="password" name="new_password" type="password" placeholder="Password baru (min. 8 karakter)" minlength="8" required autocomplete="new-password" aria-describedby="d-password">
+            <button class="btn btn-secondary" type="submit">Simpan</button>
+          </div>
+        </form>
+
+        <!-- Steam -->
+        <div class="setting">
+          <svg class="ico" aria-hidden="true"><use href="#i-steam"/></svg>
+          <div>
+            <h2>Hubungkan Steam</h2>
+            <p>Sinkronkan akun WaterMist Anda dengan Steam.</p>
+          </div>
+          <div class="setting-action">
+            {% if user.steam_profile %}
+            <form method="post" action="{{ url_for('profile.disconnect_steam') }}"><button class="btn btn-secondary" type="submit">Putuskan Steam</button></form>
+            {% else %}
+            <form method="post" action="{{ url_for('profile.connect_steam') }}">
+              <label class="sr-only" for="steam-profile">SteamID64 atau Profile URL</label>
+              <input class="input" id="steam-profile" name="steam_profile" placeholder="SteamID64 atau Profile URL" required>
+              <button class="btn btn-primary" type="submit">Connect dengan Steam</button>
+            </form>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Logout -->
+        <div class="setting">
+          <svg class="ico" aria-hidden="true"><use href="#i-logout"/></svg>
+          <div>
+            <h2>Logout</h2>
+            <p>Keluar dari akun ini.</p>
+          </div>
+          <div class="setting-action">
+            <form method="post" action="{{ url_for('auth.logout') }}"><button class="btn btn-secondary" type="submit">Logout</button></form>
+          </div>
+        </div>
+
+      </section>
+    </div>
+
+    <div data-slot="footer"></div>
+  </main>
+
+</body>
+</html>
